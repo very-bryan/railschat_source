@@ -1,0 +1,167 @@
+<% content_for :page_title, "노트" %>
+
+<div class="space-y-6">
+  <!-- Header with filters and actions -->
+  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div class="flex items-center space-x-3">
+      <!-- Search -->
+      <%= form_with url: notes_path, method: :get, local: true, class: "flex items-center space-x-3" do |form| %>
+        <div class="relative">
+          <%= form.text_field :search, placeholder: "노트 검색...", value: params[:search], 
+                             class: "pl-10 pr-4 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75] w-64 bg-white" %>
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <%= icon "search", library: "tabler", class: "w-4 h-4 text-slate-400" %>
+          </div>
+        </div>
+        
+        <!-- Category filter -->
+        <%= form.select :category_id, options_from_collection_for_select(@categories, :id, :name, params[:category_id]), 
+                       { prompt: "모든 카테고리" }, 
+                       { class: "border border-slate-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75] bg-white" } %>
+        
+        <!-- Status filter -->
+        <%= form.select :status_id, options_from_collection_for_select(@statuses, :id, :name, params[:status_id]), 
+                       { prompt: "모든 상태" }, 
+                       { class: "border border-slate-200 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75] bg-white" } %>
+        
+        <%= form.submit "검색", class: "px-4 py-2 bg-[#FF6D75] text-white rounded-md hover:bg-[#E85560] focus:outline-none focus:ring-2 focus:ring-[#FF6D75] font-medium" %>
+      <% end %>
+    </div>
+    
+    <!-- New note button -->
+    <div>
+      <%= link_to new_note_path, class: "inline-flex items-center px-4 py-2 bg-[#FF6D75] text-white rounded-md hover:bg-[#E85560] focus:outline-none focus:ring-2 focus:ring-[#FF6D75] font-medium" do %>
+        <%= icon "plus", library: "tabler", class: "w-4 h-4 mr-2" %>
+        새 노트 생성
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Notes list -->
+  <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+    <% if @notes.any? %>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">제목</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">카테고리</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">상태</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">담당자</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">마감일</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">생성일</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">작업</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-slate-200">
+            <% @notes.each do |note| %>
+              <tr class="hover:bg-slate-50 transition-colors">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <div class="flex-shrink-0 w-2 h-2 rounded-full mr-3" 
+                         style="background-color: <%= note.category.color %>"></div>
+                    <div>
+                      <div class="flex items-center space-x-2">
+                        <div class="text-sm font-medium text-slate-900">
+                          <%= link_to note.title, note_path(note), class: "hover:text-[#FF6D75]" %>
+                        </div>
+                        <% if note.attachments.any? %>
+                          <span class="text-slate-400" title="<%= pluralize(note.attachments.count, '개') %> 첨부 파일">
+                            <%= icon "paperclip", library: "tabler", class: "w-4 h-4" %>
+                          </span>
+                        <% end %>
+                      </div>
+                      <% if note.parent.present? %>
+                        <div class="text-xs text-slate-500 flex items-center mt-1">
+                          <%= icon "arrow-narrow-right", library: "tabler", class: "w-3 h-3 mr-1" %>
+                          <%= note.parent.title %>
+                        </div>
+                      <% end %>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                        style="background-color: <%= note.category.color %>20; color: <%= note.category.color %>;">
+                    <%= note.category.name %>
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                        style="background-color: <%= note.status.color %>20; color: <%= note.status.color %>;">
+                    <%= note.status.name %>
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex -space-x-1">
+                    <% note.assignees.limit(3).each do |assignee| %>
+                      <div class="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-xs font-medium text-gray-600 border-2 border-white"
+                           title="<%= assignee.full_name.present? ? assignee.full_name : assignee.email %>">
+                        <%= assignee.full_name.present? ? assignee.full_name.first : assignee.email.first.upcase %>
+                      </div>
+                    <% end %>
+                    <% if note.assignees.count > 3 %>
+                      <div class="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-xs font-medium text-gray-600 border-2 border-white">
+                        +<%= note.assignees.count - 3 %>
+                      </div>
+                    <% end %>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                  <% if note.due_date.present? %>
+                    <div class="flex items-center">
+                      <% if note.overdue? %>
+                        <%= icon "alert-circle", library: "tabler", class: "w-4 h-4 mr-1 text-red-500" %>
+                        <span class="text-red-600"><%= note.due_date.strftime("%Y-%m-%d") %></span>
+                      <% elsif note.due_today? %>
+                        <%= icon "clock", library: "tabler", class: "w-4 h-4 mr-1 text-amber-500" %>
+                        <span class="text-amber-600"><%= note.due_date.strftime("%Y-%m-%d") %></span>
+                      <% else %>
+                        <%= icon "calendar", library: "tabler", class: "w-4 h-4 mr-1 text-slate-400" %>
+                        <%= note.due_date.strftime("%Y-%m-%d") %>
+                      <% end %>
+                    </div>
+                  <% else %>
+                    <span class="text-slate-400">-</span>
+                  <% end %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                  <%= note.created_at.strftime("%Y-%m-%d") %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
+                  <div class="flex items-center justify-end space-x-2">
+                    <%= link_to note_path(note), class: "text-slate-400 hover:text-slate-600 p-1" do %>
+                      <%= icon "eye", library: "tabler", class: "w-4 h-4" %>
+                    <% end %>
+                    <%= link_to edit_note_path(note), class: "text-slate-400 hover:text-slate-600 p-1" do %>
+                      <%= icon "edit", library: "tabler", class: "w-4 h-4" %>
+                    <% end %>
+                    <%= link_to note_path(note), method: :delete, 
+                               data: { confirm: "정말로 삭제하시겠습니까?" }, 
+                               class: "text-slate-400 hover:text-red-600 p-1" do %>
+                      <%= icon "trash", library: "tabler", class: "w-4 h-4" %>
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="px-6 py-12 text-center">
+        <div class="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mx-auto">
+          <%= icon "file-text", library: "tabler", class: "w-6 h-6 text-slate-400" %>
+        </div>
+        <h3 class="mt-2 text-sm font-medium text-slate-900">노트가 없습니다</h3>
+        <p class="mt-1 text-sm text-slate-500">첫 번째 노트를 생성해보세요.</p>
+        <div class="mt-6">
+          <%= link_to new_note_path, class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#FF6D75] hover:bg-[#E85560] focus:outline-none focus:ring-2 focus:ring-[#FF6D75]" do %>
+            <%= icon "plus", library: "tabler", class: "w-4 h-4 mr-2" %>
+            새 노트 생성
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

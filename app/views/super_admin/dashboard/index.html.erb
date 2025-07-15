@@ -1,0 +1,204 @@
+<% content_for :page_title, "시스템 대시보드" %>
+
+<div class="space-y-6">
+  <!-- Key Metrics -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-slate-600">전체 워크스페이스</p>
+          <p class="text-2xl font-bold text-slate-900 mt-1"><%= number_with_delimiter(@total_workspaces) %></p>
+          <p class="text-xs text-slate-500 mt-1">
+            <span class="text-green-600">+<%= @new_workspaces_30d %></span> 최근 30일
+          </p>
+        </div>
+        <div class="p-3 bg-purple-100 rounded-lg">
+          <span class="text-2xl">🏢</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-slate-600">전체 사용자</p>
+          <p class="text-2xl font-bold text-slate-900 mt-1"><%= number_with_delimiter(@total_users) %></p>
+          <p class="text-xs text-slate-500 mt-1">
+            <span class="text-green-600">+<%= @new_users_30d %></span> 최근 30일
+          </p>
+        </div>
+        <div class="p-3 bg-blue-100 rounded-lg">
+          <span class="text-2xl">👥</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-slate-600">활성 사용자</p>
+          <p class="text-2xl font-bold text-slate-900 mt-1"><%= number_with_delimiter(@active_users_30d) %></p>
+          <p class="text-xs text-slate-500 mt-1">최근 30일</p>
+        </div>
+        <div class="p-3 bg-green-100 rounded-lg">
+          <span class="text-2xl">📊</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-slate-600">전체 노트</p>
+          <p class="text-2xl font-bold text-slate-900 mt-1"><%= number_with_delimiter(@total_notes) %></p>
+          <p class="text-xs text-slate-500 mt-1">모든 워크스페이스</p>
+        </div>
+        <div class="p-3 bg-yellow-100 rounded-lg">
+          <span class="text-2xl">📄</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-slate-600">스토리지 사용량</p>
+          <p class="text-2xl font-bold text-slate-900 mt-1"><%= number_to_human_size(@total_storage_used) %></p>
+          <p class="text-xs text-slate-500 mt-1">전체 파일</p>
+        </div>
+        <div class="p-3 bg-indigo-100 rounded-lg">
+          <span class="text-2xl">💾</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Daily Signups Chart -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <h3 class="text-lg font-semibold text-slate-900 mb-4">일일 가입자 수</h3>
+      <div class="h-64">
+        <canvas id="signupsChart"></canvas>
+      </div>
+    </div>
+    
+    <!-- Workspace Size Distribution -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <h3 class="text-lg font-semibold text-slate-900 mb-4">워크스페이스 규모 분포</h3>
+      <div class="space-y-4">
+        <% @workspace_size_distribution.each do |size, count| %>
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-sm font-medium text-slate-700"><%= size %></span>
+              <span class="text-sm text-slate-600"><%= count %>개 (<%= (count.to_f / @total_workspaces * 100).round(1) %>%)</span>
+            </div>
+            <div class="w-full bg-slate-200 rounded-full h-2">
+              <div class="bg-purple-600 h-2 rounded-full" style="width: <%= (count.to_f / @total_workspaces * 100).round %>%"></div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Workspaces and Active Workspaces -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Recent Workspaces -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-slate-900">최근 생성된 워크스페이스</h3>
+        <%= link_to "전체 보기", super_admin_workspaces_path, class: "text-sm text-purple-600 hover:text-purple-700" %>
+      </div>
+      <div class="divide-y divide-slate-200">
+        <% @recent_workspaces.each do |workspace| %>
+          <div class="px-6 py-4 hover:bg-slate-50">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="text-sm font-medium text-slate-900">
+                  <%= link_to workspace.name, super_admin_workspace_path(workspace), class: "hover:text-purple-600" %>
+                </h4>
+                <p class="text-xs text-slate-500 mt-1">
+                  <%= workspace.users.count %>명 • <%= workspace.created_at.strftime("%Y-%m-%d") %>
+                </p>
+              </div>
+              <div class="text-right">
+                <p class="text-xs text-slate-500">
+                  노트 <%= workspace.notes.count %>개
+                </p>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+    
+    <!-- Active Workspaces -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+      <div class="px-6 py-4 border-b border-slate-200">
+        <h3 class="text-lg font-semibold text-slate-900">활발한 워크스페이스</h3>
+      </div>
+      <div class="divide-y divide-slate-200">
+        <% @active_workspaces.each do |workspace| %>
+          <div class="px-6 py-4 hover:bg-slate-50">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="text-sm font-medium text-slate-900">
+                  <%= link_to workspace.name, super_admin_workspace_path(workspace), class: "hover:text-purple-600" %>
+                </h4>
+                <p class="text-xs text-slate-500 mt-1">
+                  <%= workspace.users.count %>명 • 최근 7일 활동
+                </p>
+              </div>
+              <div class="text-right">
+                <p class="text-sm font-medium text-green-600">
+                  <%= workspace.notes.where(created_at: 7.days.ago..).count %>개 노트
+                </p>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  // Daily Signups Chart
+  const ctx = document.getElementById('signupsChart').getContext('2d');
+  const signupsData = <%= @daily_signups.to_json %>;
+  const dates = Object.keys(signupsData).sort();
+  const values = dates.map(date => signupsData[date]);
+  
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: dates.map(date => new Date(date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })),
+      datasets: [{
+        label: '가입자 수',
+        data: values,
+        borderColor: 'rgb(147, 51, 234)',
+        backgroundColor: 'rgba(147, 51, 234, 0.1)',
+        tension: 0.1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1
+          }
+        }
+      }
+    }
+  });
+</script>

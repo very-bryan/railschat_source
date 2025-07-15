@@ -1,0 +1,11 @@
+<%= turbo_stream.append "comments" do %>
+  <%= render partial: "comments/comment", locals: { comment: @comment } %>
+<% end %>
+
+<%= turbo_stream.replace "new_comment" do %>
+  <%= render partial: "comments/form", locals: { commentable: @commentable, comment: @commentable.comments.build } %>
+<% end %>
+
+<%= turbo_stream.update "comments_count" do %>
+  <%= @commentable.comments.count %>개의 댓글
+<% end %>

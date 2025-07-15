@@ -1,0 +1,2 @@
+module WorkspaceMembersHelper
+end

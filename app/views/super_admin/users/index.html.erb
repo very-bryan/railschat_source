@@ -1,0 +1,162 @@
+<% content_for :page_title, "사용자 관리" %>
+
+<div class="space-y-6">
+  <!-- Search and Filters -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+    <%= form_with url: super_admin_users_path, method: :get, class: "flex items-center gap-4" do |form| %>
+      <div class="flex-1">
+        <%= text_field_tag :q, params[:q], 
+            placeholder: "이메일 또는 이름으로 검색...",
+            class: "w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-600" %>
+      </div>
+      
+      <div>
+        <label class="block text-xs font-medium text-slate-700 mb-1">역할</label>
+        <%= select_tag :role, 
+            options_for_select([
+              ['전체', ''],
+              ['슈퍼 관리자', 'super_admin'],
+              ['워크스페이스 관리자', 'admin'],
+              ['일반 사용자', 'user']
+            ], params[:role]),
+            class: "px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-600" %>
+      </div>
+      
+      <%= submit_tag "검색", class: "px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700" %>
+    <% end %>
+  </div>
+
+  <!-- Users Table -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+    <table class="min-w-full divide-y divide-slate-200">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+            사용자
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+            워크스페이스
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+            역할
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+            가입일
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+            마지막 활동
+          </th>
+          <th class="relative px-6 py-3">
+            <span class="sr-only">작업</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-slate-200">
+        <% @users.each do |user| %>
+          <% last_activity = [user.notes.maximum(:created_at), user.messages.maximum(:created_at)].compact.max %>
+          
+          <tr class="hover:bg-slate-50">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div class="flex-shrink-0 h-10 w-10">
+                  <div class="h-10 w-10 bg-gradient-to-br from-purple-600 to-purple-800 rounded-full flex items-center justify-center">
+                    <span class="text-white font-medium">
+                      <%= user.name.first.upcase %>
+                    </span>
+                  </div>
+                </div>
+                <div class="ml-4">
+                  <div class="text-sm font-medium text-slate-900">
+                    <%= link_to user.name, super_admin_user_path(user), class: "hover:text-purple-600" %>
+                  </div>
+                  <div class="text-xs text-slate-500">
+                    <%= user.email %>
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-slate-900">
+                <%= user.workspaces.count %>개
+              </div>
+              <% if user.current_workspace %>
+                <div class="text-xs text-slate-500">
+                  현재: <%= user.current_workspace.name %>
+                </div>
+              <% end %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <% if user.super_admin? %>
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                  슈퍼 관리자
+                </span>
+              <% elsif user.admin? %>
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                  관리자
+                </span>
+              <% else %>
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-800">
+                  사용자
+                </span>
+              <% end %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-slate-500">
+                <%= user.created_at.strftime("%Y-%m-%d") %>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <% if last_activity %>
+                <div class="text-sm text-slate-900">
+                  <%= time_ago_in_words(last_activity) %> 전
+                </div>
+              <% else %>
+                <div class="text-sm text-slate-400">
+                  활동 없음
+                </div>
+              <% end %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <div class="flex items-center justify-end gap-2">
+                <%= link_to super_admin_user_path(user), 
+                    class: "text-purple-600 hover:text-purple-900",
+                    title: "상세 보기" do %>
+                  <%= icon "eye", class: "w-4 h-4" %>
+                <% end %>
+                
+                <%= link_to edit_super_admin_user_path(user), 
+                    class: "text-slate-600 hover:text-slate-900",
+                    title: "편집" do %>
+                  <%= icon "pencil", class: "w-4 h-4" %>
+                <% end %>
+                
+                <% unless user == current_user %>
+                  <%= link_to impersonate_super_admin_user_path(user), 
+                      method: :post,
+                      class: "text-blue-600 hover:text-blue-900",
+                      title: "사용자로 로그인",
+                      data: { confirm: "#{user.email}로 로그인하시겠습니까?" } do %>
+                    <%= icon "user", class: "w-4 h-4" %>
+                  <% end %>
+                  
+                  <%= button_to toggle_super_admin_super_admin_user_path(user),
+                      method: :patch,
+                      class: "text-orange-600 hover:text-orange-900",
+                      title: user.super_admin? ? "슈퍼 관리자 권한 제거" : "슈퍼 관리자 권한 부여" do %>
+                    <%= icon "shield", class: "w-4 h-4" %>
+                  <% end %>
+                <% end %>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    
+    <% if @users.respond_to?(:current_page) %>
+      <div class="px-6 py-4 border-t border-slate-200">
+        <%= paginate @users %>
+      </div>
+    <% end %>
+  </div>
+</div>

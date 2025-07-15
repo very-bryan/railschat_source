@@ -1,0 +1,58 @@
+<div class="bg-slate-50 rounded-lg relative">
+  <!-- File preview area -->
+  <div id="file-preview-area" class="hidden px-4 pt-3 pb-1">
+    <div class="flex flex-wrap gap-2" id="file-preview-container">
+      <!-- File previews will be added here -->
+    </div>
+  </div>
+  
+  <!-- Note preview area -->
+  <div id="note-preview-area" class="hidden px-4 pt-3 pb-1">
+    <div id="note-preview-container">
+      <!-- Note preview will be added here -->
+    </div>
+  </div>
+  
+  <!-- Mention autocomplete dropdown -->
+  <div id="mentionDropdown" class="absolute bottom-full left-4 mb-2 bg-white border border-slate-200 rounded-lg shadow-lg hidden max-h-48 overflow-y-auto" style="width: calc(100% - 2rem); z-index: 100;">
+    <div id="mentionDropdownContent" class="py-1">
+      <!-- Mention suggestions will be added here -->
+    </div>
+  </div>
+  
+  <!-- Message form -->
+  <form id="new_message" onsubmit="sendMessage(event)" class="flex items-end gap-3 px-4 py-3">
+    <button type="button" onclick="handleAttachment()" class="mb-1" title="파일 첨부">
+      <%= icon "paperclip", library: "tabler", class: "w-5 h-5 text-slate-400 cursor-pointer hover:text-slate-600" %>
+    </button>
+    
+    <button type="button" onclick="handleNoteAttachment()" class="mb-1" title="노트 첨부">
+      <%= icon "note", library: "tabler", class: "w-5 h-5 text-slate-400 cursor-pointer hover:text-slate-600" %>
+    </button>
+    
+    <!-- Hidden file input -->
+    <input type="file" 
+           id="file-input" 
+           multiple 
+           class="hidden" 
+           accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
+           onchange="handleFileSelection(event)">
+    
+    <textarea name="message[body]" 
+              placeholder="#<%= channel.name %>에 메시지를 입력하세요..."
+              class="flex-1 bg-transparent outline-none text-sm placeholder-slate-400 resize-none min-h-[24px] max-h-[120px]"
+              autocomplete="off"
+              rows="1"
+              onkeydown="handleMessageKeyPress(event, this)"
+              oninput="handleMessageInput(event, this)"
+              id="message_body"
+              data-channel-id="<%= channel.id %>"></textarea>
+    <input type="hidden" name="message[parent_message_id]" id="parent_message_id" value="">
+    <input type="hidden" name="message[note_id]" id="note_id" value="">
+    
+    <button type="submit" class="mb-1" id="send-button">
+      <%= icon "send", library: "tabler", class: "w-5 h-5 text-slate-400 cursor-pointer hover:text-slate-600" %>
+    </button>
+  </form>
+</div>
+

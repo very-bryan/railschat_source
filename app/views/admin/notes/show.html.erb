@@ -1,0 +1,76 @@
+<% content_for(:page_title, "노트 상세") %>
+
+<div class="max-w-4xl mx-auto">
+  <div class="mb-8">
+    <%= link_to admin_notes_path, class: "inline-flex items-center text-sm text-slate-600 hover:text-slate-900" do %>
+      <%= icon "arrow-left", class: "w-4 h-4 mr-1" %>
+      노트 목록으로 돌아가기
+    <% end %>
+  </div>
+
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+    <div class="flex items-start justify-between mb-6">
+      <h1 class="text-2xl font-bold text-slate-900">노트 상세</h1>
+      
+      <%= button_to admin_note_path(@note), method: :delete, class: "inline-flex items-center px-3 py-2 border border-red-300 rounded-md text-sm font-medium text-red-700 bg-white hover:bg-red-50", data: { turbo_confirm: "정말로 이 노트를 삭제하시겠습니까?" } do %>
+        <%= icon "trash", class: "w-4 h-4 mr-2" %>
+        삭제
+      <% end %>
+    </div>
+    
+    <div class="space-y-6">
+      <div>
+        <h2 class="text-sm font-medium text-slate-500 mb-2">작성자</h2>
+        <% if @note.user.present? %>
+          <div class="flex items-center">
+            <div class="h-10 w-10 rounded-full bg-[#FF6D75] flex items-center justify-center mr-3">
+              <span class="text-white font-medium">
+                <%= @note.user.name.present? ? @note.user.name.first.upcase : @note.user.email.first.upcase %>
+              </span>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-slate-900">
+                <%= @note.user.name || @note.user.email %>
+              </p>
+              <p class="text-xs text-slate-500">
+                <%= link_to @note.user.email, admin_user_path(@note.user), class: "text-[#FF6D75] hover:text-[#FF5561]" %>
+              </p>
+            </div>
+          </div>
+        <% else %>
+          <p class="text-sm text-slate-500">익명 (삭제된 사용자)</p>
+        <% end %>
+      </div>
+      
+      <div>
+        <h2 class="text-sm font-medium text-slate-500 mb-2">워크스페이스</h2>
+        <p class="text-sm text-slate-900">
+          <%= link_to @note.workspace.name, admin_workspace_path(@note.workspace), class: "text-[#FF6D75] hover:text-[#FF5561]" %>
+        </p>
+      </div>
+      
+      <div>
+        <h2 class="text-sm font-medium text-slate-500 mb-2">작성일</h2>
+        <p class="text-sm text-slate-900">
+          <%= @note.created_at.strftime("%Y년 %m월 %d일 %H:%M:%S") %>
+        </p>
+      </div>
+      
+      <% if @note.created_at != @note.updated_at %>
+        <div>
+          <h2 class="text-sm font-medium text-slate-500 mb-2">수정일</h2>
+          <p class="text-sm text-slate-900">
+            <%= @note.updated_at.strftime("%Y년 %m월 %d일 %H:%M:%S") %>
+          </p>
+        </div>
+      <% end %>
+      
+      <div>
+        <h2 class="text-sm font-medium text-slate-500 mb-2">내용</h2>
+        <div class="bg-slate-50 rounded-md p-4 mt-2">
+          <p class="text-sm text-slate-900 whitespace-pre-wrap"><%= @note.content %></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

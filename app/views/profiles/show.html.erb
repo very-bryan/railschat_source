@@ -1,0 +1,209 @@
+<div class="min-h-screen bg-slate-50">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- 페이지 헤더 -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-slate-900">개인정보</h1>
+      <p class="mt-2 text-sm text-slate-600">프로필 정보를 확인하고 관리하세요</p>
+    </div>
+
+    <!-- 프로필 카드 -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+      <!-- 프로필 헤더 -->
+      <div class="p-6 border-b border-slate-200">
+        <div class="flex items-center space-x-4">
+          <!-- 프로필 이미지 -->
+          <div class="flex-shrink-0">
+            <% if @user.avatar_url.present? %>
+              <%= image_tag @user.avatar_url, alt: @user.full_name, class: "h-20 w-20 rounded-full" %>
+            <% else %>
+              <div class="h-20 w-20 rounded-full bg-gradient-to-br from-[#FF6D75] to-[#E85560] flex items-center justify-center text-white text-2xl font-semibold">
+                <%= @user.full_name.first.upcase %>
+              </div>
+            <% end %>
+          </div>
+          
+          <!-- 프로필 정보 -->
+          <div class="flex-1">
+            <h2 class="text-xl font-semibold text-slate-900"><%= @user.full_name %></h2>
+            <p class="text-sm text-slate-600"><%= @user.email %></p>
+          </div>
+          
+          <!-- 편집 버튼 -->
+          <%= link_to edit_profile_path, class: "inline-flex items-center px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6D75]" do %>
+            <%= icon "pencil", library: "tabler", class: "w-4 h-4 mr-2" %>
+            프로필 편집
+          <% end %>
+        </div>
+      </div>
+
+      <!-- 프로필 상세 정보 -->
+      <div class="p-6">
+        <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+          <!-- 이름 -->
+          <div>
+            <dt class="text-sm font-medium text-slate-500">이름</dt>
+            <dd class="mt-1 text-sm text-slate-900"><%= @user.full_name %></dd>
+          </div>
+          
+          <!-- 이메일 -->
+          <div>
+            <dt class="text-sm font-medium text-slate-500">이메일</dt>
+            <dd class="mt-1 text-sm text-slate-900"><%= @user.email %></dd>
+          </div>
+          
+          <!-- 역할 -->
+          <div>
+            <dt class="text-sm font-medium text-slate-500">역할</dt>
+            <dd class="mt-1 text-sm text-slate-900"><%= @user.role || "사용자" %></dd>
+          </div>
+          
+          <!-- 가입일 -->
+          <div>
+            <dt class="text-sm font-medium text-slate-500">가입일</dt>
+            <dd class="mt-1 text-sm text-slate-900"><%= @user.created_at.strftime("%Y년 %m월 %d일") %></dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+
+    <!-- 계정 작업 섹션 -->
+    <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200">
+      <div class="p-6">
+        <h3 class="text-lg font-semibold text-slate-900 mb-4">계정 작업</h3>
+        
+        <div class="flex flex-wrap gap-4">
+          <!-- 비밀번호 변경 -->
+          <%= link_to edit_user_registration_path, class: "inline-flex items-center px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6D75]" do %>
+            <%= icon "lock", library: "tabler", class: "w-4 h-4 mr-2" %>
+            비밀번호 변경
+          <% end %>
+          
+          <!-- 로그아웃 -->
+          <%= button_to destroy_user_session_path, 
+              method: :delete, 
+              data: { turbo: false },
+              class: "inline-flex items-center px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6D75]" do %>
+            <%= icon "logout", library: "tabler", class: "w-4 h-4 mr-2" %>
+            로그아웃
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- 알림 설정 섹션 -->
+    <div class="mt-8 bg-white rounded-lg shadow-sm border border-slate-200">
+      <div class="p-6">
+        <h3 class="text-lg font-semibold text-slate-900 mb-4">알림 설정</h3>
+        <p class="text-sm text-slate-600 mb-6">각 알림 유형을 켜거나 끌 수 있습니다</p>
+        
+        <div class="space-y-4">
+          <!-- 이메일 알림 -->
+          <div class="flex items-center justify-between py-3 border-b border-slate-100">
+            <div class="flex-1">
+              <h4 class="text-sm font-medium text-slate-900">이메일 알림</h4>
+              <p class="text-sm text-slate-500">중요한 업데이트와 알림을 이메일로 받습니다</p>
+            </div>
+            <div data-controller="toggle" 
+                 data-toggle-url-value="/profile/notifications" 
+                 data-toggle-field-value="email_notifications">
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" 
+                       data-toggle-target="checkbox"
+                       class="sr-only peer" 
+                       <%= 'checked' if @user.email_notifications %>>
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#FF6D75]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF6D75]"></div>
+              </label>
+            </div>
+          </div>
+          
+          <!-- 마케팅 이메일 -->
+          <div class="flex items-center justify-between py-3 border-b border-slate-100">
+            <div class="flex-1">
+              <h4 class="text-sm font-medium text-slate-900">마케팅 이메일</h4>
+              <p class="text-sm text-slate-500">새로운 기능, 팁, 특별 혜택에 대한 소식을 받습니다</p>
+            </div>
+            <div data-controller="toggle" 
+                 data-toggle-url-value="/profile/notifications" 
+                 data-toggle-field-value="marketing_emails">
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" 
+                       data-toggle-target="checkbox"
+                       class="sr-only peer" 
+                       <%= 'checked' if @user.marketing_emails %>>
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#FF6D75]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF6D75]"></div>
+              </label>
+            </div>
+          </div>
+          
+          <!-- 브라우저 알림 -->
+          <div class="flex items-center justify-between py-3 border-b border-slate-100">
+            <div class="flex-1">
+              <h4 class="text-sm font-medium text-slate-900">브라우저 알림</h4>
+              <p class="text-sm text-slate-500">브라우저에서 실시간 알림을 받습니다</p>
+            </div>
+            <div data-controller="toggle" 
+                 data-toggle-url-value="/profile/notifications" 
+                 data-toggle-field-value="browser_notifications">
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" 
+                       data-toggle-target="checkbox"
+                       class="sr-only peer" 
+                       <%= 'checked' if @user.browser_notifications %>>
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#FF6D75]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF6D75]"></div>
+              </label>
+            </div>
+          </div>
+          
+          <!-- 업무 시간 알림 -->
+          <div class="flex items-center justify-between py-3">
+            <div class="flex-1">
+              <h4 class="text-sm font-medium text-slate-900">업무 시간외 알림 차단</h4>
+              <p class="text-sm text-slate-500">평일 오후 6시부터 오전 9시까지 알림을 받지 않습니다</p>
+            </div>
+            <div data-controller="toggle" 
+                 data-toggle-url-value="/profile/notifications" 
+                 data-toggle-field-value="quiet_hours">
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" 
+                       data-toggle-target="checkbox"
+                       class="sr-only peer" 
+                       <%= 'checked' if @user.quiet_hours %>>
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#FF6D75]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF6D75]"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 위험 구역 -->
+    <div class="mt-8 bg-white rounded-lg shadow-sm border border-red-200">
+      <div class="p-6">
+        <h3 class="text-lg font-semibold text-red-600 mb-4">위험 구역</h3>
+        
+        <div class="space-y-4">
+          <!-- 계정 삭제 -->
+          <div>
+            <h4 class="text-sm font-medium text-slate-900">계정 삭제</h4>
+            <p class="text-sm text-slate-600">계정과 모든 데이터를 영구적으로 삭제합니다</p>
+            <p class="text-xs text-slate-500 mt-1">
+              <%= icon "info-circle", library: "tabler", class: "w-3 h-3 inline mr-1" %>
+              계정 삭제 시 작성한 노트, 메시지, 댓글 등 모든 콘텐츠가 함께 삭제됩니다.
+            </p>
+            <div class="mt-3">
+              <%= button_to profile_path, 
+                  method: :delete, 
+                  data: { 
+                    turbo_confirm: "정말로 계정을 삭제하시겠습니까?\n\n⚠️ 주의사항:\n• 이 작업은 되돌릴 수 없습니다\n• 계정 정보가 영구적으로 삭제됩니다\n• 작성한 모든 노트, 메시지, 댓글이 삭제됩니다\n• 워크스페이스 및 채널 멤버십이 제거됩니다" 
+                  },
+                  class: "inline-flex items-center px-3 py-2 border border-red-300 rounded-md text-sm font-medium text-red-700 bg-white hover:bg-red-50" do %>
+                <%= icon "trash", library: "tabler", class: "w-4 h-4 mr-2" %>
+                계정 삭제
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,37 @@
+<% if favorite_channels.any? %>
+  <div class="border-t border-slate-200 sidebar-section">
+    <div class="sidebar-section-header flex items-center justify-between cursor-pointer" onclick="toggleFavoriteChannels()">
+      <span class="sidebar-text text-xs font-medium text-slate-500 uppercase">즐겨찾는 채널</span>
+      <%= icon "chevron-down", library: "tabler", class: "w-3 h-3 text-slate-400 transition-transform duration-200", id: "favorite-channels-chevron" %>
+    </div>
+    <div class="space-y-0.5" id="favorite-channels-list">
+      <% favorite_channels.each do |channel| %>
+        <%= link_to chat_channel_path(channel), class: "sidebar-channel-item flex items-center gap-2 rounded-md text-xs transition-colors #{params[:id].to_i == channel.id ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-100'}", data: { turbo: false } do %>
+          <span class="sidebar-text <%= params[:id].to_i == channel.id ? 'text-slate-900' : 'text-slate-700' %>">#</span>
+          <span class="sidebar-text flex-1 font-medium truncate"><%= channel.name %></span>
+          
+          <% # 읽지 않은 메시지 개수 계산 %>
+          <% if user_signed_in? %>
+            <% last_read_message = current_user.message_reads.joins(:message).where(messages: { channel_id: channel.id }).maximum('messages.created_at') %>
+            <% unread_count = if last_read_message
+                channel.messages.where('created_at > ?', last_read_message).where.not(user: current_user).count
+              else
+                channel.messages.where.not(user: current_user).count
+              end %>
+            
+            <% if unread_count > 0 %>
+              <span class="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-medium text-white bg-[#FF6D75] rounded-full min-w-[18px]">
+                <%= unread_count > 99 ? '99+' : unread_count %>
+              </span>
+            <% end %>
+          <% end %>
+          
+          <% if channel.is_private? %>
+            <%= icon "lock", library: "tabler", class: "sidebar-channel-lock w-3 h-3 #{params[:id].to_i == channel.id ? 'text-slate-600' : 'text-slate-400'}" %>
+          <% end %>
+          <span class="sidebar-text text-[10px] <%= params[:id].to_i == channel.id ? 'text-slate-600' : 'text-slate-400' %>"><%= channel.users.count %></span>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+<% end %>

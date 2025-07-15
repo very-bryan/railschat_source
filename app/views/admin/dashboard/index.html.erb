@@ -1,0 +1,181 @@
+<% content_for :page_title, "대시보드" %>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+  <!-- Total Users -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+          <%= icon "users", class: "w-6 h-6 text-blue-600" %>
+        </div>
+      </div>
+      <div class="ml-4">
+        <p class="text-sm font-medium text-slate-600">전체 사용자</p>
+        <p class="text-2xl font-semibold text-slate-900"><%= number_with_delimiter(@total_users) %></p>
+      </div>
+    </div>
+    <div class="mt-4">
+      <p class="text-xs text-slate-500">최근 30일: <span class="font-medium text-slate-700">+<%= @new_users_last_30_days %></span></p>
+    </div>
+  </div>
+
+  <!-- Total Workspaces -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+          <%= icon "building-2", class: "w-6 h-6 text-green-600" %>
+        </div>
+      </div>
+      <div class="ml-4">
+        <p class="text-sm font-medium text-slate-600">워크스페이스</p>
+        <p class="text-2xl font-semibold text-slate-900"><%= number_with_delimiter(@total_workspaces) %></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Total Notes -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+          <%= icon "file-text", class: "w-6 h-6 text-purple-600" %>
+        </div>
+      </div>
+      <div class="ml-4">
+        <p class="text-sm font-medium text-slate-600">전체 노트</p>
+        <p class="text-2xl font-semibold text-slate-900"><%= number_with_delimiter(@total_notes) %></p>
+      </div>
+    </div>
+    <div class="mt-4">
+      <p class="text-xs text-slate-500">최근 30일: <span class="font-medium text-slate-700">+<%= @new_notes_last_30_days %></span></p>
+    </div>
+  </div>
+
+  <!-- Total Messages -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+          <%= icon "message-circle", class: "w-6 h-6 text-yellow-600" %>
+        </div>
+      </div>
+      <div class="ml-4">
+        <p class="text-sm font-medium text-slate-600">전체 메시지</p>
+        <p class="text-2xl font-semibold text-slate-900"><%= number_with_delimiter(@total_messages || 0) %></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <!-- Recent Users -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+    <div class="px-6 py-4 border-b border-slate-200">
+      <h3 class="text-lg font-semibold text-slate-900">최근 가입 사용자</h3>
+    </div>
+    <div class="divide-y divide-slate-200">
+      <% @recent_users.each do |user| %>
+        <div class="px-6 py-4 hover:bg-slate-50">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <% if user.avatar_url.present? %>
+                  <%= image_tag user.avatar_url, alt: user.name, class: "w-10 h-10 rounded-full" %>
+                <% else %>
+                  <div class="w-10 h-10 bg-gradient-to-br from-[#FF6D75] to-[#E85560] rounded-full flex items-center justify-center">
+                    <span class="text-white text-sm font-medium">
+                      <%= user.name.present? ? user.name.first.upcase : user.email.first.upcase %>
+                    </span>
+                  </div>
+                <% end %>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm font-medium text-slate-900"><%= user.name.presence || "이름 없음" %></p>
+                <p class="text-sm text-slate-500"><%= user.email %></p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="text-xs text-slate-500"><%= user.created_at.strftime("%Y-%m-%d") %></p>
+              <% if user.admin? %>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                  관리자
+                </span>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+    <div class="px-6 py-3 border-t border-slate-200">
+      <%= link_to "모든 사용자 보기", admin_users_path, class: "text-sm font-medium text-[#FF6D75] hover:text-[#E85560]" %>
+    </div>
+  </div>
+
+  <!-- Workspace Stats -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+    <div class="px-6 py-4 border-b border-slate-200">
+      <h3 class="text-lg font-semibold text-slate-900">워크스페이스별 노트 수</h3>
+    </div>
+    <div class="px-6 py-4">
+      <% if @notes_by_workspace.any? %>
+        <div class="space-y-4">
+          <% @notes_by_workspace.each do |workspace_name, count| %>
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <p class="text-sm font-medium text-slate-700"><%= workspace_name %></p>
+                <p class="text-sm text-slate-600"><%= count %>개</p>
+              </div>
+              <div class="w-full bg-slate-200 rounded-full h-2">
+                <div class="bg-[#FF6D75] h-2 rounded-full" style="width: <%= (count.to_f / @notes_by_workspace.first[1] * 100).round %>%"></div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-sm text-slate-500">아직 노트가 없습니다.</p>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Notes -->
+<div class="mt-6 bg-white rounded-lg shadow-sm border border-slate-200">
+  <div class="px-6 py-4 border-b border-slate-200">
+    <h3 class="text-lg font-semibold text-slate-900">최근 작성된 노트</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-slate-200">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">내용</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">작성자</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">워크스페이스</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">작성일</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-slate-200">
+        <% @recent_notes.each do |note| %>
+          <tr class="hover:bg-slate-50">
+            <td class="px-6 py-4">
+              <p class="text-sm text-slate-900 max-w-xs truncate"><%= note.content %></p>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <p class="text-sm text-slate-500"><%= note.user&.name || note.user&.email || "익명" %></p>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <p class="text-sm text-slate-500"><%= note.workspace.name %></p>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <p class="text-sm text-slate-500"><%= note.created_at.strftime("%Y-%m-%d %H:%M") %></p>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+  <div class="px-6 py-3 border-t border-slate-200">
+    <%= link_to "모든 노트 보기", admin_notes_path, class: "text-sm font-medium text-[#FF6D75] hover:text-[#E85560]" %>
+  </div>
+</div>

@@ -1,0 +1,92 @@
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+    <!-- Form Card -->
+    <div class="bg-white rounded-xl shadow-xl border border-slate-100 p-8">
+      <!-- Logo and Title inside the card -->
+      <div class="text-center mb-6">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[#FF8A92] to-[#FF6D75] rounded-xl shadow-lg mb-3">
+          <span class="text-white font-bold text-2xl">W</span>
+        </div>
+        <h1 class="text-xl font-bold text-slate-900">워크스페이스 생성</h1>
+        <p class="mt-1 text-sm text-slate-600">팀이나 회사를 위한 워크스페이스를 만들어주세요</p>
+      </div>
+
+      <%= form_with model: @workspace, local: true, class: "space-y-5" do |form| %>
+        <% if @workspace.errors.any? %>
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <%= icon "alert-circle", library: "tabler", class: "w-5 h-5 text-red-400" %>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">오류가 발생했습니다</h3>
+                <div class="mt-2 text-sm text-red-700">
+                  <ul class="list-disc list-inside">
+                    <% @workspace.errors.full_messages.each do |message| %>
+                      <li><%= message %></li>
+                    <% end %>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <div>
+          <%= form.label :name, "워크스페이스 이름", class: "block text-sm font-medium text-slate-700 mb-2" %>
+          <%= form.text_field :name, 
+              class: "block w-full px-4 py-3 border border-slate-200 rounded-lg text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-transparent transition-all", 
+              placeholder: "예: acme, developer-team",
+              pattern: "[a-zA-Z0-9-]+",
+              title: "영문, 숫자, 하이픈(-)만 사용 가능합니다",
+              onkeypress: "return /[a-zA-Z0-9-]/.test(event.key)",
+              oninput: "this.value = this.value.toLowerCase().replace(/[^a-z0-9-]/g, '')",
+              autofocus: true %>
+          <p class="mt-2 text-xs text-slate-500">영문, 숫자, 하이픈(-)만 사용 가능 • <span class="font-medium text-slate-700">workspace-name</span>.veryworks.io로 사용됩니다</p>
+        </div>
+
+        <div>
+          <%= form.label :icon, "워크스페이스 아이콘", class: "block text-sm font-medium text-slate-700 mb-3" %>
+          <div class="flex flex-col items-center">
+            <div class="w-24 h-24 bg-slate-50 border-2 border-slate-200 border-dashed rounded-xl flex items-center justify-center overflow-hidden transition-all hover:border-slate-300 mb-3" id="icon-preview">
+              <%= icon "building", library: "tabler", class: "w-12 h-12 text-slate-300" %>
+            </div>
+            <label class="cursor-pointer">
+              <%= form.file_field :icon, 
+                  class: "hidden",
+                  accept: "image/*",
+                  onchange: "previewIcon(this)" %>
+              <span class="inline-flex items-center px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6D75] transition-all">
+                <%= icon "upload", library: "tabler", class: "w-4 h-4 mr-2" %>
+                파일 선택
+              </span>
+            </label>
+            <p class="mt-2 text-xs text-slate-500">정사각형 이미지를 권장합니다 (최대 2MB)</p>
+          </div>
+        </div>
+
+        <div class="pt-4">
+          <%= form.submit "워크스페이스 생성", 
+              class: "w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#FF6D75] hover:bg-[#E85560] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6D75] transition-all transform hover:scale-[1.02]" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<script>
+function previewIcon(input) {
+  const preview = document.getElementById('icon-preview');
+  
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+      preview.classList.remove('border-dashed', 'border-2');
+      preview.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover rounded-xl">`;
+    }
+    
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+</script>

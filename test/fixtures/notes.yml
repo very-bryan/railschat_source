@@ -1,0 +1,21 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  title: MyString
+  body: MyText
+  category: one
+  status: one
+  user: one
+  parent: one
+  start_date: 2025-07-09
+  due_date: 2025-07-09
+
+two:
+  title: MyString
+  body: MyText
+  category: two
+  status: two
+  user: two
+  parent: two
+  start_date: 2025-07-09
+  due_date: 2025-07-09

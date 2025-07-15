@@ -1,0 +1,53 @@
+import consumer from "./consumer"
+
+function createReactionsContainer(messageElement) {
+  const container = document.createElement('div');
+  container.className = 'flex flex-wrap gap-1 mt-2';
+  const messageContent = messageElement.querySelector('.flex-1.min-w-0');
+  if (messageContent) {
+    messageContent.appendChild(container);
+  }
+  return container;
+}
+
+// Support both chat/show and chat/index pages
+const channelElement = document.querySelector('#messagesContainer') || document.querySelector('#messages-container');
+const channelId = channelElement?.dataset?.channelReactionsChannelIdValue || channelElement?.dataset?.channelId;
+
+if (channelId) {
+  consumer.subscriptions.create({ channel: "ChannelReactionsChannel", channel_id: channelId }, {
+    connected() {
+      console.log("Connected to reactions channel");
+    },
+
+    disconnected() {
+      console.log("Disconnected from reactions channel");
+    },
+
+    received(data) {
+      // Update the message reactions
+      const messageElement = document.getElementById(`message-${data.message_id}`);
+      if (messageElement) {
+        const reactionsContainer = messageElement.querySelector('.flex-wrap.gap-1.mt-2') || 
+                                   createReactionsContainer(messageElement);
+        
+        // Clear existing reactions
+        reactionsContainer.innerHTML = '';
+        
+        // Add updated reactions
+        Object.entries(data.reactions).forEach(([emoji, reactionData]) => {
+          const button = document.createElement('button');
+          button.className = 'inline-flex items-center gap-1 hover:scale-110 transition-transform';
+          button.setAttribute('onclick', `toggleReaction('${data.message_id}', '${emoji}')`);
+          button.innerHTML = `<span class="text-xl">${emoji}</span><span class="text-xs font-medium text-slate-500">${reactionData.count}</span>`;
+          reactionsContainer.appendChild(button);
+        });
+        
+        // Remove reactions container if empty
+        if (Object.keys(data.reactions).length === 0) {
+          reactionsContainer.remove();
+        }
+      }
+    }
+  });
+}

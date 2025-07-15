@@ -1,0 +1,245 @@
+<% content_for :page_title, "고급 분석" %>
+
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-gray-900">고급 분석</h1>
+      <p class="text-gray-600">상세한 성과 분석과 트렌드를 확인합니다.</p>
+    </div>
+    <div class="flex items-center space-x-3">
+      <%= link_to reports_path, class: "inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF6D75]" do %>
+        <span class="mr-2">📊</span>
+        기본 보고서
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Monthly Trends -->
+  <div class="bg-white shadow-sm border border-gray-200 rounded-lg p-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">월별 트렌드 (최근 12개월)</h3>
+    <div class="grid grid-cols-12 gap-2 mb-4">
+      <% @monthly_trends.each do |trend| %>
+        <div class="text-center">
+          <div class="text-xs text-gray-500 mb-1"><%= Date.parse(trend[:month]).strftime('%m월') %></div>
+          <div class="bg-gray-100 rounded-lg p-2 space-y-1">
+            <div class="w-full bg-[#FF6D75] bg-opacity-30 rounded h-6 flex items-center justify-center relative">
+              <div class="absolute inset-0 bg-[#FF6D75] rounded" style="height: <%= trend[:created] > 0 ? [trend[:created] * 4, 100].min : 4 %>%"></div>
+              <span class="text-xs text-white font-medium relative z-10"><%= trend[:created] %></span>
+            </div>
+            <div class="w-full bg-green-200 rounded h-6 flex items-center justify-center relative">
+              <div class="absolute inset-0 bg-green-500 rounded" style="height: <%= trend[:completed] > 0 ? [trend[:completed] * 4, 100].min : 4 %>%"></div>
+              <span class="text-xs text-white font-medium relative z-10"><%= trend[:completed] %></span>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+    <div class="flex items-center justify-center space-x-6 text-sm">
+      <div class="flex items-center space-x-2">
+        <div class="w-4 h-4 bg-[#FF6D75] rounded"></div>
+        <span>생성된 노트</span>
+      </div>
+      <div class="flex items-center space-x-2">
+        <div class="w-4 h-4 bg-green-500 rounded"></div>
+        <span>완료된 노트</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category Performance -->
+  <div class="bg-white shadow-sm border border-gray-200 rounded-lg p-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">카테고리별 성과</h3>
+    <div class="space-y-4">
+      <% @category_performance.each do |category| %>
+        <div class="border border-gray-200 rounded-lg p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center space-x-3">
+              <div class="w-4 h-4 rounded-full" style="background-color: <%= category[:color] %>"></div>
+              <h4 class="font-medium text-gray-900"><%= category[:name] %></h4>
+            </div>
+            <div class="flex items-center space-x-4 text-sm">
+              <span class="text-gray-600">총 <%= category[:total] %>개</span>
+              <span class="text-green-600">완료 <%= category[:completed] %>개</span>
+              <span class="font-medium text-gray-900"><%= category[:completion_rate] %>%</span>
+            </div>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="h-2 rounded-full" 
+                 style="width: <%= category[:completion_rate] %>%; background-color: <%= category[:color] %>"></div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Time Distribution -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-white shadow-sm border border-gray-200 rounded-lg p-6">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">시간대별 활동 분포</h3>
+      <div class="space-y-4">
+        <% time_periods = [
+          { key: :morning, name: '오전 (06:00-11:59)', icon: '🌅' },
+          { key: :afternoon, name: '오후 (12:00-17:59)', icon: '☀️' },
+          { key: :evening, name: '저녁 (18:00-23:59)', icon: '🌆' },
+          { key: :night, name: '밤 (00:00-05:59)', icon: '🌙' }
+        ] %>
+        
+        <% max_time = @time_distribution.values.max || 1 %>
+        <% @time_distribution.each do |period, count| %>
+          <% period_info = time_periods.find { |p| p[:key] == period } %>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <span class="text-lg"><%= period_info[:icon] %></span>
+              <span class="text-sm font-medium text-gray-700"><%= period_info[:name] %></span>
+            </div>
+            <div class="flex items-center space-x-3">
+              <div class="w-32 bg-gray-200 rounded-full h-2">
+                <div class="h-2 bg-[#FF6D75] rounded-full" style="width: <%= (count.to_f / max_time * 100).round(1) %>%"></div>
+              </div>
+              <span class="text-sm text-gray-600 min-w-[30px]"><%= count %>개</span>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Team Productivity (Admin only) -->
+    <div class="bg-white shadow-sm border border-gray-200 rounded-lg p-6">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">
+        <% if current_user.role == 'admin' %>
+          팀 생산성 순위
+        <% else %>
+          개인 성과 요약
+        <% end %>
+      </h3>
+      
+      <% if current_user.role == 'admin' && @team_productivity %>
+        <div class="space-y-3">
+          <% @team_productivity.each_with_index do |user, index| %>
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-[#FFF0F1] rounded-full flex items-center justify-center">
+                  <span class="text-sm font-medium text-[#FF6D75]">#<%= index + 1 %></span>
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-gray-900"><%= user[:name] %></p>
+                  <p class="text-xs text-gray-500">완료율 <%= user[:completion_rate] %>%</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="text-sm text-gray-900"><%= user[:total_notes] %>개</p>
+                <p class="text-xs text-green-600">완료 <%= user[:completed_notes] %>개</p>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="space-y-4">
+          <div class="text-center p-6 bg-[#FFF0F1] rounded-lg">
+            <div class="text-3xl font-bold text-[#FF6D75] mb-2">
+              <%= current_user.notes.joins(:status).where(statuses: { name: 'Done' }).count %>
+            </div>
+            <div class="text-sm text-gray-600">완료한 총 작업 수</div>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div class="text-center p-4 bg-green-50 rounded-lg">
+              <div class="text-xl font-bold text-green-600 mb-1">
+                <%= current_user.notes.joins(:status).where(statuses: { name: 'Doing' }).count %>
+              </div>
+              <div class="text-xs text-gray-600">진행 중</div>
+            </div>
+            <div class="text-center p-4 bg-yellow-50 rounded-lg">
+              <div class="text-xl font-bold text-yellow-600 mb-1">
+                <%= current_user.notes.joins(:status).where(statuses: { name: 'To Do' }).count %>
+              </div>
+              <div class="text-xs text-gray-600">할 일</div>
+            </div>
+          </div>
+          
+          <div class="text-center p-4 bg-red-50 rounded-lg">
+            <div class="text-xl font-bold text-red-600 mb-1">
+              <%= current_user.notes.where('due_date < ?', Date.current).joins(:status).where.not(statuses: { name: 'Done' }).count %>
+            </div>
+            <div class="text-xs text-gray-600">지연된 작업</div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Productivity Insights -->
+  <div class="bg-white shadow-sm border border-gray-200 rounded-lg p-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">생산성 인사이트</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      
+      <!-- Most Active Day -->
+      <div class="p-4 bg-[#FFF0F1] rounded-lg">
+        <div class="flex items-center space-x-3 mb-3">
+          <span class="text-2xl">📈</span>
+          <h4 class="font-medium text-gray-900">가장 활발한 시간</h4>
+        </div>
+        <% most_active_period = @time_distribution.max_by { |_, count| count } %>
+        <% period_names = { morning: '오전', afternoon: '오후', evening: '저녁', night: '밤' } %>
+        <p class="text-sm text-gray-600">
+          <%= period_names[most_active_period[0]] %> 시간대에 가장 많은 활동
+          (<%= most_active_period[1] %>개 노트)
+        </p>
+      </div>
+
+      <!-- Top Category -->
+      <div class="p-4 bg-green-50 rounded-lg">
+        <div class="flex items-center space-x-3 mb-3">
+          <span class="text-2xl">🏆</span>
+          <h4 class="font-medium text-gray-900">최고 성과 카테고리</h4>
+        </div>
+        <% top_category = @category_performance.max_by { |cat| cat[:completion_rate] } %>
+        <% if top_category %>
+          <p class="text-sm text-gray-600">
+            <%= top_category[:name] %> 카테고리에서 <%= top_category[:completion_rate] %>% 완료율
+          </p>
+        <% else %>
+          <p class="text-sm text-gray-600">아직 데이터가 없습니다</p>
+        <% end %>
+      </div>
+
+      <!-- Trend Analysis -->
+      <div class="p-4 bg-yellow-50 rounded-lg">
+        <div class="flex items-center space-x-3 mb-3">
+          <span class="text-2xl">📊</span>
+          <h4 class="font-medium text-gray-900">트렌드 분석</h4>
+        </div>
+        <% recent_months = @monthly_trends.last(3) %>
+        <% if recent_months.length >= 2 %>
+          <% trend = recent_months.last[:created] > recent_months.first[:created] ? '상승' : '하락' %>
+          <p class="text-sm text-gray-600">
+            최근 3개월 간 생산성이 <%= trend %> 추세입니다
+          </p>
+        <% else %>
+          <p class="text-sm text-gray-600">트렌드 분석을 위해 더 많은 데이터가 필요합니다</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Options -->
+  <div class="bg-white shadow-sm border border-gray-200 rounded-lg p-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">데이터 내보내기</h3>
+    <div class="flex items-center space-x-4">
+      <%= link_to reports_path(format: :json), 
+                 class: "inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF6D75]" do %>
+        <span class="mr-2">📄</span>
+        기본 보고서 JSON
+      <% end %>
+      <%= link_to reports_analytics_path(format: :json), 
+                 class: "inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF6D75]" do %>
+        <span class="mr-2">📊</span>
+        고급 분석 JSON
+      <% end %>
+    </div>
+    <p class="text-sm text-gray-500 mt-2">
+      JSON 형식으로 데이터를 내보내어 외부 도구나 시스템과 연동할 수 있습니다.
+    </p>
+  </div>
+</div>

@@ -1,0 +1,21 @@
+<%= form_with model: [commentable, comment], id: "new_comment", class: "mt-4" do |form| %>
+  <div class="space-y-4">
+    <div>
+      <%= form.text_area :content, 
+          rows: 3,
+          placeholder: "댓글을 작성하세요...",
+          class: "w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75] resize-none" %>
+    </div>
+    
+    <div class="flex items-center justify-between">
+      <div>
+        <%= form.file_field :attachments, 
+            multiple: true,
+            class: "text-sm text-slate-500 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-[#FFF0F1] file:text-[#FF6D75] hover:file:bg-[#FFE0E2]" %>
+      </div>
+      
+      <%= form.submit "댓글 작성", 
+          class: "px-4 py-2 bg-[#FF6D75] text-white rounded-md text-sm font-medium hover:bg-[#FF5561] focus:outline-none focus:ring-2 focus:ring-[#FF6D75] cursor-pointer" %>
+    </div>
+  </div>
+<% end %>

@@ -1,0 +1,37 @@
+<%= turbo_stream.replace "message-wrapper-#{@message.id}" do %>
+  <div id="message-wrapper-<%= @message.id %>">
+    <%= render 'messages/message_grouped', message: @message, previous_message: nil %>
+    <div id="thread-replies-<%= @message.id %>" class="thread-replies">
+      <% @message.thread_messages.includes(:user).order(:created_at).each do |reply| %>
+        <div class="ml-12">
+          <%= render 'messages/message_grouped', message: reply, previous_message: nil %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+<% pinned_messages = @message.channel.messages.where(is_pinned: true).includes(:user).order(pinned_at: :desc) %>
+
+<% if pinned_messages.any? %>
+  <%= turbo_stream.update "pinnedMessagesContainer" do %>
+    <div id="pinnedMessagesBar" class="bg-yellow-50 border-b border-yellow-200 px-4 py-2 cursor-pointer" onclick="cycleThroughPinnedMessages()">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2 flex-1">
+          <span class="text-yellow-700">📌</span>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-yellow-800">고정된 메시지</p>
+            <p id="pinnedMessagePreview" class="text-xs text-yellow-700 truncate">
+              <%= pinned_messages.first.body.truncate(50) %>
+            </p>
+          </div>
+        </div>
+        <button onclick="event.stopPropagation(); showAllPinnedMessages()" class="text-xs text-yellow-700 hover:text-yellow-800">
+          모두 보기 (<%= pinned_messages.count %>)
+        </button>
+      </div>
+    </div>
+  <% end %>
+<% else %>
+  <%= turbo_stream.update "pinnedMessagesContainer", "" %>
+<% end %>

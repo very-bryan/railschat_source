@@ -1,0 +1,7 @@
+<%# Reload message with associations %>
+<% @message = Message.includes(:user, :reactions, :parent_message).find(@message.id) %>
+
+<%# Simply replace the message element %>
+<%= turbo_stream.replace "message-#{@message.id}" do %>
+  <%= render 'messages/message_grouped', message: @message, previous_message: nil %>
+<% end %>

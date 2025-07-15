@@ -1,0 +1,13 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  workspace: one
+  user: one
+  role: MyString
+  joined_at: 2025-07-10 08:31:44
+
+two:
+  workspace: two
+  user: two
+  role: MyString
+  joined_at: 2025-07-10 08:31:44

@@ -1,0 +1,254 @@
+<% content_for :page_title, @note.title %>
+
+<div class="max-w-4xl mx-auto space-y-6" data-controller="note-presence" data-note-presence-note-id-value="<%= @note.id %>">
+  <!-- Real-time Viewers -->
+  <div data-note-presence-target="viewers" class="mb-4"></div>
+  
+  <!-- Header -->
+  <div class="bg-white shadow-sm border border-gray-200 rounded-lg">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-3 h-3 rounded-full" style="background-color: <%= @note.category.color %>"></div>
+          <h1 class="text-xl font-semibold text-gray-900"><%= @note.title %></h1>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                style="background-color: <%= @note.status.color %>20; color: <%= @note.status.color %>;">
+            <%= @note.status.name %>
+          </span>
+        </div>
+        <div class="flex items-center space-x-3">
+          <%= link_to edit_note_path(@note), class: "inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6D75]" do %>
+            <span class="mr-1">✏️</span>
+            수정
+          <% end %>
+          <%= link_to note_path(@note), method: :delete, 
+                     data: { confirm: "정말로 삭제하시겠습니까?" }, 
+                     class: "inline-flex items-center px-3 py-1.5 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500" do %>
+            <span class="mr-1">🗑️</span>
+            삭제
+          <% end %>
+        </div>
+      </div>
+    </div>
+    
+    <div class="px-6 py-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Category -->
+        <div>
+          <dt class="text-sm font-medium text-gray-500">카테고리</dt>
+          <dd class="mt-1">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                  style="background-color: <%= @note.category.color %>20; color: <%= @note.category.color %>;">
+              <%= @note.category.name %>
+            </span>
+          </dd>
+        </div>
+        
+        <!-- Creator -->
+        <div>
+          <dt class="text-sm font-medium text-gray-500">작성자</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <%= @note.user.full_name.present? ? @note.user.full_name : @note.user.email %>
+          </dd>
+        </div>
+        
+        <!-- Dates -->
+        <div>
+          <dt class="text-sm font-medium text-gray-500">시작일</dt>
+          <dd class="mt-1 text-sm text-gray-900">
+            <%= @note.start_date&.strftime("%Y-%m-%d") || "-" %>
+          </dd>
+        </div>
+        
+        <div>
+          <dt class="text-sm font-medium text-gray-500">마감일</dt>
+          <dd class="mt-1 text-sm">
+            <% if @note.due_date.present? %>
+              <div class="flex items-center">
+                <% if @note.overdue? %>
+                  <span class="text-red-500 mr-1">⚠️</span>
+                  <span class="text-red-600"><%= @note.due_date.strftime("%Y-%m-%d") %></span>
+                <% elsif @note.due_today? %>
+                  <span class="text-yellow-500 mr-1">⏰</span>
+                  <span class="text-yellow-600"><%= @note.due_date.strftime("%Y-%m-%d") %></span>
+                <% else %>
+                  <span class="text-gray-400 mr-1">📅</span>
+                  <span class="text-gray-900"><%= @note.due_date.strftime("%Y-%m-%d") %></span>
+                <% end %>
+              </div>
+            <% else %>
+              <span class="text-gray-400">-</span>
+            <% end %>
+          </dd>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assignees -->
+  <% if @note.assignees.any? %>
+    <div class="bg-white shadow-sm border border-gray-200 rounded-lg">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-medium text-gray-900">담당자</h3>
+      </div>
+      <div class="px-6 py-4">
+        <div class="flex flex-wrap gap-3">
+          <% @note.assignees.each do |assignee| %>
+            <div class="flex items-center space-x-2">
+              <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-sm font-medium text-gray-600">
+                <%= assignee.full_name.present? ? assignee.full_name.first : assignee.email.first.upcase %>
+              </div>
+              <div>
+                <div class="text-sm font-medium text-gray-900">
+                  <%= assignee.full_name.present? ? assignee.full_name : assignee.email %>
+                </div>
+                <div class="text-xs text-gray-500"><%= assignee.email %></div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Parent/Children -->
+  <% if @note.parent.present? || @note.children.any? %>
+    <div class="bg-white shadow-sm border border-gray-200 rounded-lg">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-medium text-gray-900">관계</h3>
+      </div>
+      <div class="px-6 py-4 space-y-4">
+        <% if @note.parent.present? %>
+          <div>
+            <dt class="text-sm font-medium text-gray-500 mb-2">부모 노트</dt>
+            <dd>
+              <div class="flex items-center space-x-2">
+                <div class="w-2 h-2 rounded-full" style="background-color: <%= @note.parent.category.color %>"></div>
+                <%= link_to @note.parent.title, note_path(@note.parent), class: "text-sm font-medium text-[#FF6D75] hover:text-[#E85560]" %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                      style="background-color: <%= @note.parent.status.color %>20; color: <%= @note.parent.status.color %>;">
+                  <%= @note.parent.status.name %>
+                </span>
+              </div>
+            </dd>
+          </div>
+        <% end %>
+        
+        <% if @note.children.any? %>
+          <div>
+            <dt class="text-sm font-medium text-gray-500 mb-2">하위 노트</dt>
+            <dd class="space-y-2">
+              <% @note.children.each do |child| %>
+                <div class="flex items-center space-x-2">
+                  <div class="w-2 h-2 rounded-full" style="background-color: <%= child.category.color %>"></div>
+                  <%= link_to child.title, note_path(child), class: "text-sm font-medium text-[#FF6D75] hover:text-[#E85560]" %>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                        style="background-color: <%= child.status.color %>20; color: <%= child.status.color %>;">
+                    <%= child.status.name %>
+                  </span>
+                </div>
+              <% end %>
+            </dd>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Content -->
+  <div class="bg-white shadow-sm border border-gray-200 rounded-lg">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h3 class="text-lg font-medium text-gray-900">내용</h3>
+    </div>
+    <div class="px-6 py-4">
+      <div class="prose prose-sm max-w-none">
+        <%= simple_format(@note.body) %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attachments -->
+  <% if @note.attachments.any? %>
+    <div class="bg-white shadow-sm border border-gray-200 rounded-lg">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-medium text-gray-900">첨부 파일</h3>
+      </div>
+      <div class="px-6 py-4">
+        <div class="space-y-3">
+          <% @note.attachments.each do |attachment| %>
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100">
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-[#FFE0E2] rounded-lg flex items-center justify-center">
+                  <span class="text-[#FF6D75] text-lg">📎</span>
+                </div>
+                <div>
+                  <div class="text-sm font-medium text-gray-900">
+                    <%= attachment.filename %>
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    <%= number_to_human_size(attachment.byte_size) %>
+                    <% if attachment.content_type.present? %>
+                      • <%= attachment.content_type %>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center space-x-2">
+                <% if attachment.image? %>
+                  <%= link_to rails_blob_path(attachment), target: "_blank", 
+                             class: "inline-flex items-center px-3 py-1.5 text-sm font-medium text-[#FF6D75] bg-[#FFE0E2] rounded-md hover:bg-[#FFD0D3]" do %>
+                    <span class="mr-1">👁️</span>
+                    미리보기
+                  <% end %>
+                <% end %>
+                <%= link_to rails_blob_path(attachment, disposition: "attachment"), 
+                           class: "inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50" do %>
+                  <span class="mr-1">💾</span>
+                  다운로드
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Comments Section -->
+  <div class="bg-white shadow-sm border border-gray-200 rounded-lg">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h3 class="text-lg font-medium text-gray-900">
+        <span id="comments_count"><%= @note.comments.count %>개의 댓글</span>
+      </h3>
+    </div>
+    
+    <div class="px-6 py-4">
+      <div id="comments" class="divide-y divide-gray-200">
+        <% @note.comments.includes(:user, attachments_attachments: :blob).recent.each do |comment| %>
+          <%= render partial: "comments/comment", locals: { comment: comment } %>
+        <% end %>
+      </div>
+      
+      <% if @note.comments.none? %>
+        <p class="text-sm text-gray-500 text-center py-8">아직 댓글이 없습니다. 첫 번째 댓글을 작성해보세요!</p>
+      <% end %>
+      
+      <%= render partial: "comments/form", locals: { commentable: @note, comment: @note.comments.build } %>
+    </div>
+  </div>
+
+  <!-- Back to list -->
+  <div class="flex justify-between items-center">
+    <%= link_to notes_path, class: "inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6D75]" do %>
+      <span class="mr-2">⬅️</span>
+      노트 목록으로
+    <% end %>
+    
+    <div class="text-sm text-gray-500">
+      생성일: <%= @note.created_at.strftime("%Y-%m-%d %H:%M") %>
+      <% if @note.created_at != @note.updated_at %>
+        | 수정일: <%= @note.updated_at.strftime("%Y-%m-%d %H:%M") %>
+      <% end %>
+    </div>
+  </div>
+</div>

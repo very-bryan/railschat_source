@@ -1,0 +1,79 @@
+/*
+ * This is a manifest file that'll be compiled into application.css.
+ *
+ * With Propshaft, assets are served efficiently without preprocessing steps. You can still include
+ * application-wide styles in this file, but keep in mind that CSS precedence will follow the standard
+ * cascading order, meaning styles declared later in the document or manifest will override earlier ones,
+ * depending on specificity.
+ *
+ * Consider organizing styles into separate files for maintainability.
+ */
+
+/* Import dark mode styles */
+@import "darkmode.css";
+
+/* Emoji reactions styling */
+.flex-wrap button[onclick*="toggleReaction"] {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  outline: none !important;
+}
+
+.flex-wrap button[onclick*="toggleReaction"]:hover {
+  background: transparent !important;
+}
+
+/* Reaction tooltip styling */
+.group\/reaction:hover .group-hover\/reaction\:block {
+  display: block !important;
+}
+
+/* Dark mode tooltip */
+html.dark .bg-slate-900 {
+  background-color: #18181b !important;
+  border: 1px solid #27272a !important;
+}
+
+html.dark .border-t-slate-900 {
+  border-top-color: #18181b !important;
+}
+
+/* Custom animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+/* Hide action buttons when editing */
+.editing .group-hover\:opacity-100 {
+  display: none !important;
+}
+
+/* Google Docs preview styling */
+.google-docs-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+}
+
+.google-docs-preview:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}

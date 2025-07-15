@@ -1,0 +1,149 @@
+<% content_for :page_title, "새 노트 생성" %>
+
+<div class="max-w-4xl mx-auto">
+  <div class="bg-white border border-slate-200 rounded-lg">
+    <div class="px-6 py-4 border-b border-slate-200">
+      <h3 class="text-lg font-semibold text-slate-900">새 노트 생성</h3>
+      <p class="text-sm text-slate-500">새로운 업무 노트를 생성합니다.</p>
+    </div>
+    
+    <div class="p-6">
+      <%= form_with model: @note, local: true, class: "space-y-6" do |form| %>
+        <% if @note.errors.any? %>
+          <div class="bg-red-50 border border-red-200 rounded-md p-4">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <%= icon "alert-circle", library: "tabler", class: "w-5 h-5 text-red-400" %>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">
+                  <%= pluralize(@note.errors.count, "error") %> 오류가 발생했습니다:
+                </h3>
+                <div class="mt-2 text-sm text-red-700">
+                  <ul class="list-disc list-inside">
+                    <% @note.errors.full_messages.each do |message| %>
+                      <li><%= message %></li>
+                    <% end %>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Left Column -->
+          <div class="space-y-6">
+            <!-- Title -->
+            <div>
+              <%= form.label :title, "제목", class: "block text-sm font-medium text-slate-700 mb-1" %>
+              <%= form.text_field :title, 
+                                 class: "block w-full px-3 py-2 border border-slate-200 rounded-md text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75]",
+                                 placeholder: "노트 제목을 입력하세요" %>
+            </div>
+
+            <!-- Category -->
+            <div>
+              <%= form.label :category_id, "카테고리", class: "block text-sm font-medium text-slate-700 mb-1" %>
+                <%= form.select :category_id, 
+                               options_from_collection_for_select(@categories, :id, :name, @note.category_id),
+                               { prompt: "카테고리를 선택하세요" },
+                               { class: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#FF6D75] focus:border-[#FF6D75] sm:text-sm" } %>
+              </div>
+            </div>
+
+            <!-- Status -->
+            <div>
+              <%= form.label :status_id, "상태", class: "block text-sm font-medium text-gray-700" %>
+              <div class="mt-1">
+                <%= form.select :status_id, 
+                               options_from_collection_for_select(@statuses, :id, :name, @note.status_id),
+                               { prompt: "상태를 선택하세요" },
+                               { class: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#FF6D75] focus:border-[#FF6D75] sm:text-sm" } %>
+              </div>
+            </div>
+
+            <!-- Parent Note -->
+            <div>
+              <%= form.label :parent_id, "부모 노트", class: "block text-sm font-medium text-gray-700" %>
+              <div class="mt-1">
+                <%= form.select :parent_id, 
+                               options_from_collection_for_select(current_user.notes.where.not(id: @note.id), :id, :title, @note.parent_id),
+                               { prompt: "부모 노트를 선택하세요 (선택사항)" },
+                               { class: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#FF6D75] focus:border-[#FF6D75] sm:text-sm" } %>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">이 노트를 다른 노트의 하위 작업으로 설정할 수 있습니다.</p>
+            </div>
+          </div>
+
+          <!-- Right Column -->
+          <div class="space-y-6">
+            <!-- Assignees -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700">담당자</label>
+              <div class="mt-2 space-y-2">
+                <% @users.each do |user| %>
+                  <div class="flex items-center">
+                    <%= check_box_tag "assignee_ids[]", user.id, false, 
+                                     class: "h-4 w-4 text-[#FF6D75] focus:ring-[#FF6D75] border-gray-300 rounded" %>
+                    <label class="ml-2 block text-sm text-gray-900">
+                      <%= user.full_name.present? ? user.full_name : user.email %>
+                      <span class="text-xs text-gray-500">(<%= user.email %>)</span>
+                    </label>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+
+            <!-- Dates -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <%= form.label :start_date, "시작일", class: "block text-sm font-medium text-gray-700" %>
+                <div class="mt-1">
+                  <%= form.date_field :start_date, 
+                                     class: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#FF6D75] focus:border-[#FF6D75] sm:text-sm" %>
+                </div>
+              </div>
+
+              <div>
+                <%= form.label :due_date, "마감일", class: "block text-sm font-medium text-gray-700" %>
+                <div class="mt-1">
+                  <%= form.date_field :due_date, 
+                                     class: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#FF6D75] focus:border-[#FF6D75] sm:text-sm" %>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div>
+          <%= form.label :body, "내용", class: "block text-sm font-medium text-gray-700" %>
+          <div class="mt-1">
+            <%= form.text_area :body, 
+                              rows: 8,
+                              class: "appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-[#FF6D75] focus:border-[#FF6D75] sm:text-sm",
+                              placeholder: "노트 내용을 입력하세요..." %>
+          </div>
+        </div>
+
+        <!-- File Attachments -->
+        <div>
+          <%= form.label :attachments, "파일 첨부", class: "block text-sm font-medium text-gray-700" %>
+          <div class="mt-1">
+            <%= form.file_field :attachments, 
+                               multiple: true,
+                               class: "block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-[#FFF0F1] file:text-[#E85560] hover:file:bg-[#FFE0E2]" %>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">여러 파일을 선택하여 첨부할 수 있습니다.</p>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+          <%= link_to "취소", notes_path, class: "px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6D75]" %>
+          <%= form.submit "노트 생성", class: "px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#FF6D75] hover:bg-[#E85560] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6D75]" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

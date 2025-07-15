@@ -1,0 +1,5 @@
+<%= turbo_stream.remove dom_id(@comment) %>
+
+<%= turbo_stream.update "comments_count" do %>
+  <%= @commentable.comments.count %>개의 댓글
+<% end %>

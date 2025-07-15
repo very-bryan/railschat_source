@@ -1,0 +1,156 @@
+<div class="max-w-4xl mx-auto px-4 py-8">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-900">알림</h1>
+      <p class="text-slate-600 mt-1">읽지 않은 알림 <%= @unread_count %>개</p>
+    </div>
+    
+    <div class="flex items-center gap-4">
+      <!-- 검색 폼 -->
+      <%= form_with url: notifications_path, method: :get, local: true, class: "relative" do |form| %>
+        <div class="relative">
+          <%= form.text_field :search, 
+              placeholder: "알림 검색...", 
+              value: @search,
+              class: "pl-10 pr-4 py-2 w-64 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75] bg-white placeholder-slate-400" %>
+          <%= icon "search", library: "tabler", class: "absolute left-3 top-2.5 w-4 h-4 text-slate-400" %>
+          <%= form.hidden_field :filter, value: @filter %>
+        </div>
+      <% end %>
+      
+      <% if @notifications.any? %>
+        <%= button_to mark_all_read_notifications_path, method: :post, class: "inline-flex items-center px-4 py-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 bg-white hover:bg-slate-50" do %>
+          <%= icon "circle-check", library: "tabler", class: "w-4 h-4 mr-2" %>
+          모두 읽음 표시
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div class="border-b border-slate-200 mb-6">
+    <nav class="-mb-px flex space-x-8">
+      <%= link_to notifications_path(search: @search), class: "whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm #{@filter == 'unread' ? 'border-[#FF6D75] text-[#FF6D75]' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'} flex items-center gap-2" do %>
+        읽지 않음
+        <% if @unread_filter_count > 0 %>
+          <span class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold text-white bg-[#FF6D75] rounded-full">
+            <%= @unread_filter_count %>
+          </span>
+        <% end %>
+      <% end %>
+      
+      <%= link_to "읽음", notifications_path(filter: 'read', search: @search), class: "whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm #{@filter == 'read' ? 'border-[#FF6D75] text-[#FF6D75]' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}" %>
+      
+      <%= link_to "전체", notifications_path(filter: 'all', search: @search), class: "whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm #{@filter == 'all' ? 'border-[#FF6D75] text-[#FF6D75]' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}" %>
+      
+      <%= link_to notifications_path(filter: 'chat', search: @search), class: "whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm #{@filter == 'chat' ? 'border-[#FF6D75] text-[#FF6D75]' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'} flex items-center gap-2" do %>
+        채팅
+        <% if @chat_unread_count > 0 %>
+          <span class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold text-white bg-[#FF6D75] rounded-full">
+            <%= @chat_unread_count %>
+          </span>
+        <% end %>
+      <% end %>
+      
+      <%= link_to notifications_path(filter: 'note', search: @search), class: "whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm #{@filter == 'note' ? 'border-[#FF6D75] text-[#FF6D75]' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'} flex items-center gap-2" do %>
+        노트
+        <% if @note_unread_count > 0 %>
+          <span class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold text-white bg-[#FF6D75] rounded-full">
+            <%= @note_unread_count %>
+          </span>
+        <% end %>
+      <% end %>
+      
+      <%= link_to notifications_path(filter: 'system', search: @search), class: "whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm #{@filter == 'system' ? 'border-[#FF6D75] text-[#FF6D75]' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'} flex items-center gap-2" do %>
+        시스템
+        <% if @system_unread_count > 0 %>
+          <span class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold text-white bg-[#FF6D75] rounded-full">
+            <%= @system_unread_count %>
+          </span>
+        <% end %>
+      <% end %>
+    </nav>
+  </div>
+
+  <!-- Notifications List -->
+  <% if @notifications.any? %>
+    <div class="space-y-4">
+      <% @notifications.each do |notification| %>
+        <div class="relative rounded-lg shadow-sm border p-4 <%= notification.read? ? 'bg-white border-slate-200' : 'bg-[#FFF5F5] border-[#FFE4E6]' %>">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <div class="w-10 h-10 bg-<%= notification.type_color %>-100 rounded-full flex items-center justify-center">
+                <span class="text-lg"><%= notification.type_icon %></span>
+              </div>
+            </div>
+            
+            <div class="ml-4 flex-1">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <h3 class="text-sm <%= notification.read? ? 'font-medium text-slate-900' : 'font-semibold text-slate-900' %>">
+                    <%= notification.title %>
+                  </h3>
+                  <% if notification.body.present? %>
+                    <p class="text-sm text-slate-600 mt-1">
+                      <%= notification.body %>
+                    </p>
+                  <% end %>
+                  <div class="mt-2 flex items-center text-xs text-slate-500">
+                    <span class="px-2 py-1 rounded-full bg-<%= notification.type_color %>-50 text-<%= notification.type_color %>-700">
+                      <%= notification.priority_label %>
+                    </span>
+                    <span class="mx-2">•</span>
+                    <span><%= time_ago_in_words(notification.created_at) %>전</span>
+                  </div>
+                </div>
+                
+                <div class="ml-4 flex items-center space-x-2">
+                  <% if notification.read? %>
+                    <%= button_to notification_path(notification, mark_as_unread: true), method: :patch, class: "text-slate-400 hover:text-slate-600" do %>
+                      <%= icon "mail", library: "tabler", class: "w-5 h-5" %>
+                    <% end %>
+                  <% else %>
+                    <%= button_to notification_path(notification, mark_as_read: true), method: :patch, class: "text-[#FF6D75] hover:text-[#FF5561]" do %>
+                      <%= icon "mail-opened", library: "tabler", class: "w-5 h-5" %>
+                    <% end %>
+                  <% end %>
+                  
+                  <%= button_to notification_path(notification), method: :delete, class: "text-slate-400 hover:text-red-600", data: { turbo_confirm: "이 알림을 삭제하시겠습니까?" } do %>
+                    <%= icon "trash", library: "tabler", class: "w-5 h-5" %>
+                  <% end %>
+                </div>
+              </div>
+              
+              <% if notification.action_url.present? %>
+                <div class="mt-3">
+                  <%= link_to notification_path(notification), class: "inline-flex items-center text-sm font-medium text-[#FF6D75] hover:text-[#FF5561]" do %>
+                    자세히 보기
+                    <%= icon "arrow-right", library: "tabler", class: "w-4 h-4 ml-1" %>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+          
+          <% unless notification.read? %>
+            <div class="absolute bottom-4 right-4">
+              <span class="text-xs text-[#FF6D75] font-medium">읽지 않음</span>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+    
+    <div class="mt-6">
+      <%= paginate @notifications %>
+    </div>
+  <% else %>
+    <div class="text-center py-12">
+      <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <%= icon "bell-off", library: "tabler", class: "w-8 h-8 text-slate-400" %>
+      </div>
+      <h3 class="text-sm font-medium text-slate-900">알림이 없습니다</h3>
+      <p class="text-sm text-slate-500 mt-1">새로운 알림이 있으면 여기에 표시됩니다.</p>
+    </div>
+  <% end %>
+</div>

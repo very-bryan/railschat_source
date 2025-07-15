@@ -1,0 +1,247 @@
+<% content_for :page_title, @workspace.name %>
+
+<div class="space-y-6">
+  <!-- Header with Actions -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-900"><%= @workspace.name %></h1>
+      <% if @workspace.description.present? %>
+        <p class="text-slate-600 mt-1"><%= @workspace.description %></p>
+      <% end %>
+    </div>
+    
+    <div class="flex items-center gap-3">
+      <%= link_to "워크스페이스로 이동", root_path, 
+          class: "px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50 flex items-center gap-2" %>
+      <%= link_to edit_super_admin_workspace_path(@workspace), 
+          class: "px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center gap-2" do %>
+        <%= icon "pencil", class: "w-4 h-4" %>
+        편집
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-600">멤버</p>
+          <p class="text-2xl font-bold text-slate-900"><%= @workspace.users.count %></p>
+        </div>
+        <%= icon "users", class: "w-8 h-8 text-slate-400" %>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-600">노트</p>
+          <p class="text-2xl font-bold text-slate-900"><%= @workspace.notes.count %></p>
+        </div>
+        <%= icon "file", class: "w-8 h-8 text-slate-400" %>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-600">스토리지</p>
+          <p class="text-2xl font-bold text-slate-900"><%= number_to_human_size(@storage_used) %></p>
+        </div>
+        <%= icon "database", class: "w-8 h-8 text-slate-400" %>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-600">생성일</p>
+          <p class="text-lg font-semibold text-slate-900"><%= @workspace.created_at.strftime("%Y-%m-%d") %></p>
+        </div>
+        <%= icon "calendar", class: "w-8 h-8 text-slate-400" %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+    <div class="border-b border-slate-200">
+      <nav class="-mb-px flex space-x-8 px-6" aria-label="Tabs">
+        <a href="#members" class="border-b-2 border-purple-500 py-4 px-1 text-sm font-medium text-purple-600">
+          멤버
+        </a>
+        <a href="#activity" class="border-b-2 border-transparent py-4 px-1 text-sm font-medium text-slate-500 hover:text-slate-700 hover:border-slate-300">
+          활동 내역
+        </a>
+        <a href="#settings" class="border-b-2 border-transparent py-4 px-1 text-sm font-medium text-slate-500 hover:text-slate-700 hover:border-slate-300">
+          설정
+        </a>
+      </nav>
+    </div>
+    
+    <!-- Members Tab -->
+    <div id="members" class="p-6">
+      <div class="space-y-4">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-slate-900">워크스페이스 멤버</h3>
+          <span class="text-sm text-slate-500"><%= @workspace.users.count %>명</span>
+        </div>
+        
+        <div class="space-y-3">
+          <% @workspace.workspace_members.includes(:user).each do |member| %>
+            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-purple-600 to-purple-800 rounded-full flex items-center justify-center">
+                  <span class="text-white font-medium">
+                    <%= member.user.name.first.upcase %>
+                  </span>
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-slate-900"><%= member.user.name %></p>
+                  <p class="text-xs text-slate-500"><%= member.user.email %></p>
+                </div>
+              </div>
+              
+              <div class="flex items-center space-x-4">
+                <span class="px-2 py-1 text-xs font-medium rounded-full <%= member.role == 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-700' %>">
+                  <%= member.role == 'admin' ? '관리자' : '멤버' %>
+                </span>
+                
+                <div class="text-right">
+                  <p class="text-xs text-slate-500">가입일</p>
+                  <p class="text-sm text-slate-700"><%= member.created_at.strftime("%Y-%m-%d") %></p>
+                </div>
+                
+                <% if member.user.super_admin? %>
+                  <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">
+                    슈퍼 관리자
+                  </span>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Activity Tab -->
+    <div id="activity" class="p-6 hidden">
+      <div class="space-y-4">
+        <h3 class="text-lg font-semibold text-slate-900 mb-4">최근 활동</h3>
+        
+        <div class="space-y-3">
+          <% @recent_notes.each do |note| %>
+            <div class="flex items-start space-x-3 p-3 hover:bg-slate-50 rounded-lg">
+              <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <%= icon "file", class: "w-4 h-4 text-slate-600" %>
+              </div>
+              <div class="flex-1">
+                <p class="text-sm text-slate-900">
+                  <span class="font-medium"><%= note.user.name %></span>님이 
+                  <span class="font-medium"><%= note.title %></span> 노트를 생성했습니다
+                </p>
+                <p class="text-xs text-slate-500 mt-1">
+                  <%= time_ago_in_words(note.created_at) %> 전
+                </p>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Settings Tab -->
+    <div id="settings" class="p-6 hidden">
+      <div class="space-y-6">
+        <div>
+          <h3 class="text-lg font-semibold text-slate-900 mb-4">워크스페이스 설정</h3>
+          
+          <div class="space-y-4">
+            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+              <div>
+                <p class="text-sm font-medium text-slate-900">워크스페이스 상태</p>
+                <p class="text-xs text-slate-500 mt-1">현재 워크스페이스의 활성화 상태입니다</p>
+              </div>
+              <% if @last_activity && @last_activity > 7.days.ago %>
+                <span class="px-3 py-1 text-sm font-medium bg-green-100 text-green-700 rounded-full">
+                  활성
+                </span>
+              <% else %>
+                <span class="px-3 py-1 text-sm font-medium bg-slate-100 text-slate-700 rounded-full">
+                  비활성
+                </span>
+              <% end %>
+            </div>
+            
+            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+              <div>
+                <p class="text-sm font-medium text-slate-900">결제 상태</p>
+                <p class="text-xs text-slate-500 mt-1">워크스페이스의 결제 플랜 정보</p>
+              </div>
+              <span class="px-3 py-1 text-sm font-medium bg-blue-100 text-blue-700 rounded-full">
+                무료 플랜
+              </span>
+            </div>
+            
+            <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+              <div>
+                <p class="text-sm font-medium text-slate-900">스토리지 사용량</p>
+                <p class="text-xs text-slate-500 mt-1">총 10GB 중 <%= number_to_human_size(@storage_used) %> 사용</p>
+              </div>
+              <div class="w-32">
+                <div class="w-full bg-slate-200 rounded-full h-2">
+                  <div class="bg-purple-600 h-2 rounded-full" style="width: <%= (@storage_used.to_f / 10.gigabytes * 100).round %>%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="border-t border-slate-200 pt-6">
+          <h4 class="text-sm font-medium text-red-900 mb-3">위험 영역</h4>
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p class="text-sm text-red-800 mb-3">
+              워크스페이스를 삭제하면 모든 데이터가 영구적으로 삭제되며 복구할 수 없습니다.
+            </p>
+            <%= button_to "워크스페이스 삭제", super_admin_workspace_path(@workspace), 
+                method: :delete,
+                data: { confirm: "정말로 이 워크스페이스를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다." },
+                class: "px-4 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Simple tab switching
+  document.addEventListener('DOMContentLoaded', function() {
+    const tabs = document.querySelectorAll('nav a');
+    const panels = document.querySelectorAll('#members, #activity, #settings');
+    
+    tabs.forEach(tab => {
+      tab.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Remove active state from all tabs
+        tabs.forEach(t => {
+          t.classList.remove('border-purple-500', 'text-purple-600');
+          t.classList.add('border-transparent', 'text-slate-500');
+        });
+        
+        // Add active state to clicked tab
+        this.classList.remove('border-transparent', 'text-slate-500');
+        this.classList.add('border-purple-500', 'text-purple-600');
+        
+        // Hide all panels
+        panels.forEach(panel => panel.classList.add('hidden'));
+        
+        // Show selected panel
+        const targetId = this.getAttribute('href').substring(1);
+        document.getElementById(targetId).classList.remove('hidden');
+      });
+    });
+  });
+</script>

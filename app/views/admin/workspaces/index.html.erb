@@ -1,0 +1,75 @@
+<% content_for(:page_title, "워크스페이스 관리") %>
+
+<div class="max-w-7xl mx-auto">
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-slate-900">워크스페이스 관리</h1>
+  </div>
+
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+    <table class="min-w-full divide-y divide-slate-200">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+            워크스페이스
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+            멤버 수
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+            노트 수
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+            생성일
+          </th>
+          <th class="relative px-6 py-3">
+            <span class="sr-only">작업</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-slate-200">
+        <% @workspaces.each do |workspace| %>
+          <tr class="hover:bg-slate-50">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-medium text-slate-900">
+                <%= workspace.name %>
+              </div>
+              <% if workspace.description.present? %>
+                <div class="text-sm text-slate-500 truncate max-w-xs">
+                  <%= workspace.description %>
+                </div>
+              <% end %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-slate-900">
+                <%= workspace.users.count %>명
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-slate-900">
+                <%= workspace.notes.count %>개
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+              <%= workspace.created_at.strftime("%Y-%m-%d") %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <div class="flex items-center justify-end gap-2">
+                <%= link_to admin_workspace_path(workspace), class: "text-[#FF6D75] hover:text-[#FF5561]" do %>
+                  <%= icon "eye", class: "w-4 h-4" %>
+                <% end %>
+                
+                <%= link_to edit_admin_workspace_path(workspace), class: "text-slate-600 hover:text-slate-900" do %>
+                  <%= icon "pencil", class: "w-4 h-4" %>
+                <% end %>
+                
+                <%= button_to admin_workspace_path(workspace), method: :delete, class: "text-red-600 hover:text-red-900", data: { turbo_confirm: "정말로 이 워크스페이스를 삭제하시겠습니까? 모든 노트와 멤버십도 함께 삭제됩니다." } do %>
+                  <%= icon "trash", class: "w-4 h-4" %>
+                <% end %>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,211 @@
+<% content_for :page_title, "분석" %>
+
+<div class="space-y-6">
+  <!-- User Analytics -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+    <div class="px-6 py-4 border-b border-slate-200">
+      <h3 class="text-lg font-semibold text-slate-900">사용자 분석</h3>
+    </div>
+    <div class="p-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="text-center p-4 bg-slate-50 rounded-lg">
+          <p class="text-sm font-medium text-slate-600">전체 사용자</p>
+          <p class="text-2xl font-bold text-slate-900 mt-2"><%= number_with_delimiter(@total_users) %></p>
+        </div>
+        <div class="text-center p-4 bg-slate-50 rounded-lg">
+          <p class="text-sm font-medium text-slate-600">활성 사용자 (7일)</p>
+          <p class="text-2xl font-bold text-green-600 mt-2"><%= number_with_delimiter(@active_users_7d) %></p>
+        </div>
+        <div class="text-center p-4 bg-slate-50 rounded-lg">
+          <p class="text-sm font-medium text-slate-600">활성 사용자 (30일)</p>
+          <p class="text-2xl font-bold text-blue-600 mt-2"><%= number_with_delimiter(@active_users_30d) %></p>
+        </div>
+        <div class="text-center p-4 bg-slate-50 rounded-lg">
+          <p class="text-sm font-medium text-slate-600">활성률</p>
+          <p class="text-2xl font-bold text-purple-600 mt-2">
+            <%= (@total_users > 0 ? (@active_users_30d.to_f / @total_users * 100).round : 0) %>%
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Growth Charts -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <h3 class="text-lg font-semibold text-slate-900 mb-4">사용자 증가 추이</h3>
+      <div class="h-64">
+        <canvas id="userGrowthChart"></canvas>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <h3 class="text-lg font-semibold text-slate-900 mb-4">워크스페이스 증가 추이</h3>
+      <div class="h-64">
+        <canvas id="workspaceGrowthChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content Analytics -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+    <div class="px-6 py-4 border-b border-slate-200">
+      <h3 class="text-lg font-semibold text-slate-900">콘텐츠 분석</h3>
+    </div>
+    <div class="p-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="text-center p-4 bg-slate-50 rounded-lg">
+          <p class="text-sm font-medium text-slate-600">전체 노트</p>
+          <p class="text-2xl font-bold text-slate-900 mt-2"><%= number_with_delimiter(@total_notes) %></p>
+        </div>
+        <div class="text-center p-4 bg-slate-50 rounded-lg">
+          <p class="text-sm font-medium text-slate-600">새 노트 (30일)</p>
+          <p class="text-2xl font-bold text-green-600 mt-2"><%= number_with_delimiter(@notes_created_30d) %></p>
+        </div>
+        <div class="text-center p-4 bg-slate-50 rounded-lg">
+          <p class="text-sm font-medium text-slate-600">전체 파일</p>
+          <p class="text-2xl font-bold text-blue-600 mt-2"><%= number_with_delimiter(@total_attachments) %></p>
+        </div>
+        <div class="text-center p-4 bg-slate-50 rounded-lg">
+          <p class="text-sm font-medium text-slate-600">스토리지 사용량</p>
+          <p class="text-xl font-bold text-purple-600 mt-2"><%= number_to_human_size(@total_storage_used) %></p>
+        </div>
+        <div class="text-center p-4 bg-slate-50 rounded-lg">
+          <p class="text-sm font-medium text-slate-600">메시지 (30일)</p>
+          <p class="text-2xl font-bold text-indigo-600 mt-2"><%= number_with_delimiter(@messages_sent_30d) %></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Daily Activity Chart -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+    <h3 class="text-lg font-semibold text-slate-900 mb-4">일별 노트 생성 (최근 30일)</h3>
+    <div class="h-64">
+      <canvas id="dailyNotesChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Top Workspaces -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+    <div class="px-6 py-4 border-b border-slate-200">
+      <h3 class="text-lg font-semibold text-slate-900">가장 활발한 워크스페이스 (최근 30일)</h3>
+    </div>
+    <div class="p-6">
+      <% if @top_workspaces.empty? %>
+        <p class="text-sm text-slate-500 text-center py-4">활동 데이터가 없습니다</p>
+      <% else %>
+        <div class="space-y-3">
+          <% @top_workspaces.each_with_index do |(name, id, count), index| %>
+            <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+              <div class="flex items-center space-x-3">
+                <span class="text-lg font-bold text-slate-400">#<%= index + 1 %></span>
+                <div>
+                  <p class="text-sm font-medium text-slate-900">
+                    <%= link_to name, super_admin_workspace_path(id), class: "hover:text-purple-600" %>
+                  </p>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="text-sm font-medium text-slate-900"><%= count %>개 노트</p>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  // User Growth Chart
+  const userGrowthCtx = document.getElementById('userGrowthChart').getContext('2d');
+  const userGrowthData = <%= @user_growth_by_month.to_json %>;
+  const userGrowthLabels = Object.keys(userGrowthData);
+  const userGrowthValues = Object.values(userGrowthData);
+  
+  new Chart(userGrowthCtx, {
+    type: 'line',
+    data: {
+      labels: userGrowthLabels.map(date => new Date(date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short' })),
+      datasets: [{
+        label: '신규 사용자',
+        data: userGrowthValues,
+        borderColor: 'rgb(147, 51, 234)',
+        backgroundColor: 'rgba(147, 51, 234, 0.1)',
+        tension: 0.1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+
+  // Workspace Growth Chart
+  const workspaceGrowthCtx = document.getElementById('workspaceGrowthChart').getContext('2d');
+  const workspaceGrowthData = <%= @workspace_growth_by_month.to_json %>;
+  const workspaceGrowthLabels = Object.keys(workspaceGrowthData);
+  const workspaceGrowthValues = Object.values(workspaceGrowthData);
+  
+  new Chart(workspaceGrowthCtx, {
+    type: 'line',
+    data: {
+      labels: workspaceGrowthLabels.map(date => new Date(date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short' })),
+      datasets: [{
+        label: '신규 워크스페이스',
+        data: workspaceGrowthValues,
+        borderColor: 'rgb(59, 130, 246)',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        tension: 0.1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+
+  // Daily Notes Chart
+  const dailyNotesCtx = document.getElementById('dailyNotesChart').getContext('2d');
+  const dailyNotesData = <%= @notes_by_day.to_json %>;
+  const dailyNotesLabels = Object.keys(dailyNotesData);
+  const dailyNotesValues = Object.values(dailyNotesData);
+  
+  new Chart(dailyNotesCtx, {
+    type: 'bar',
+    data: {
+      labels: dailyNotesLabels.map(date => new Date(date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })),
+      datasets: [{
+        label: '노트 수',
+        data: dailyNotesValues,
+        backgroundColor: 'rgba(34, 197, 94, 0.8)',
+        borderColor: 'rgb(34, 197, 94)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+</script>

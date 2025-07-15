@@ -1,0 +1,379 @@
+<% content_for :page_title, "캘린더" %>
+
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-4">
+      <p class="text-sm text-slate-500">날짜별 업무 현황을 확인하세요</p>
+      <div class="flex items-center gap-2">
+        <%= link_to calendar_path(date: (@date - 1.month).strftime("%Y-%m-%d")), 
+                   class: "p-2 rounded-md hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#FF6D75] transition-colors" do %>
+          <%= icon "chevron-left", library: "tabler", class: "w-4 h-4 text-slate-600" %>
+        <% end %>
+        <h2 class="text-base font-medium text-slate-900 min-w-[120px] text-center">
+          <%= @date.strftime("%Y년 %m월") %>
+        </h2>
+        <%= link_to calendar_path(date: (@date + 1.month).strftime("%Y-%m-%d")), 
+                   class: "p-2 rounded-md hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#FF6D75] transition-colors" do %>
+          <%= icon "chevron-right", library: "tabler", class: "w-4 h-4 text-slate-600" %>
+        <% end %>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <%= link_to calendar_path, class: "px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#FF6D75]" do %>
+        오늘
+      <% end %>
+      <%= link_to new_note_path, class: "inline-flex items-center gap-2 px-4 py-2 bg-[#FF6D75] text-white rounded-md hover:bg-[#E85560] focus:ring-2 focus:ring-[#FF6D75] text-sm font-medium" do %>
+        <%= icon "plus", library: "tabler", class: "w-4 h-4" %>
+        새 노트
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Calendar -->
+  <div class="bg-white rounded-xl border border-slate-100 overflow-hidden">
+    <!-- Calendar Header -->
+    <div class="grid grid-cols-7 bg-slate-50 border-b border-slate-100">
+      <% %w[일 월 화 수 목 금 토].each_with_index do |day, index| %>
+        <div class="px-4 py-3 text-center text-sm font-medium <%= 'text-red-600' if index == 0 %> <%= 'text-[#FF6D75]' if index == 6 %> <%= 'text-slate-700' unless index == 0 || index == 6 %>">
+          <%= day %>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Calendar Grid -->
+    <div class="grid grid-cols-7">
+      <% (@start_date..@end_date).each do |date| %>
+        <div class="calendar-day h-32 border-b border-r border-slate-100 last:border-r-0 relative overflow-hidden
+                    <%= 'bg-slate-50' unless date.month == @date.month %>
+                    <%= 'bg-[#FFF0F1]' if date == Date.current %>"
+             data-date="<%= date %>"
+             ondrop="handleDrop(event, '<%= date %>')"
+             ondragover="handleDragOver(event)"
+             ondragleave="handleDragLeave(event)">
+          
+          <!-- Date Number -->
+          <div class="p-2">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium 
+                          <%= 'text-slate-400' unless date.month == @date.month %>
+                          <%= 'text-red-600' if date.sunday? && date.month == @date.month %>
+                          <%= 'text-[#FF6D75]' if date.saturday? && date.month == @date.month %>
+                          <%= 'text-[#E85560] font-bold' if date == Date.current %>">
+                <%= date.day %>
+              </span>
+              <% if date == Date.current %>
+                <span class="w-2 h-2 bg-[#FF6D75] rounded-full"></span>
+              <% end %>
+            </div>
+          </div>
+
+          <!-- Events -->
+          <div class="px-2 pb-2 space-y-1">
+            <% notes_for_date = @notes_by_date[date] || [] %>
+            <% notes_for_date.first(3).each do |note| %>
+              <div class="group relative draggable-note"
+                   draggable="true"
+                   ondragstart="handleDragStart(event, <%= note.id %>, '<%= note.due_date || note.start_date || date %>')"
+                   data-note-id="<%= note.id %>">
+                <div class="px-2 py-1 rounded text-xs font-medium truncate cursor-pointer
+                           hover:shadow-sm transition-shadow"
+                     style="background-color: <%= note.category.color %>20; color: <%= note.category.color %>;"
+                     onclick="handleNoteClick(event, <%= note.id %>)">
+                  
+                  <!-- Note indicator -->
+                  <div class="flex items-center space-x-1">
+                    <div class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: <%= note.category.color %>"></div>
+                    <span class="truncate"><%= note.title %></span>
+                  </div>
+                  
+                  <!-- Status and time info -->
+                  <div class="flex items-center justify-between mt-1">
+                    <span class="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium"
+                          style="background-color: <%= note.status.color %>15; color: <%= note.status.color %>;">
+                      <%= note.status.name %>
+                    </span>
+                    <% if note.due_date == date %>
+                      <%= icon "calendar", library: "tabler", class: "w-3 h-3 text-red-500" %>
+                    <% elsif note.start_date == date %>
+                      <%= icon "rocket", library: "tabler", class: "w-3 h-3 text-[#FF6D75]" %>
+                    <% end %>
+                  </div>
+                </div>
+                
+                <!-- Tooltip -->
+                <div class="absolute z-10 invisible group-hover:visible bg-gray-900 text-white text-xs rounded py-1 px-2 bottom-full left-1/2 transform -translate-x-1/2 mb-1 whitespace-nowrap">
+                  <%= note.title %>
+                  <% if note.due_date && note.due_date == date %>
+                    (마감)
+                  <% elsif note.start_date && note.start_date == date %>
+                    (시작)
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+            
+            <!-- More notes indicator -->
+            <% if notes_for_date.length > 3 %>
+              <div class="px-2 py-1 text-xs text-slate-500 bg-slate-100 rounded cursor-pointer hover:bg-slate-200 transition-colors"
+                   onclick="showMoreNotes('<%= date %>', <%= notes_for_date.length %>)">
+                +<%= notes_for_date.length - 3 %>개 더
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="bg-white rounded-xl border border-slate-100 p-4">
+    <h3 class="text-sm font-medium text-slate-900 mb-3">범례</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="flex items-center gap-2">
+        <%= icon "rocket", library: "tabler", class: "w-4 h-4 text-[#FF6D75]" %>
+        <span class="text-sm text-slate-600">시작일</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <%= icon "calendar", library: "tabler", class: "w-4 h-4 text-red-500" %>
+        <span class="text-sm text-slate-600">마감일</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-3 h-3 bg-[#FFF0F1] border border-[#FF6D75] rounded"></div>
+        <span class="text-sm text-slate-600">오늘</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-3 h-3 bg-slate-50 border border-slate-200 rounded"></div>
+        <span class="text-sm text-slate-600">다른 달</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Stats -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white rounded-xl p-6 border border-slate-100 hover:shadow-md transition-all">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-slate-600 font-medium">이번 달 할 일</p>
+        <div class="p-2 bg-[#FFF0F1] rounded-lg">
+          <%= icon "file-text", library: "tabler", class: "w-5 h-5 text-[#FF6D75]" %>
+        </div>
+      </div>
+      <div class="space-y-1">
+        <h3 class="text-2xl font-bold text-slate-900">
+          <%= @notes.where(start_date: @date.beginning_of_month..@date.end_of_month).count %>
+        </h3>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-xl p-6 border border-slate-100 hover:shadow-md transition-all">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-slate-600 font-medium">이번 달 마감</p>
+        <div class="p-2 bg-red-50 rounded-lg">
+          <%= icon "clock", library: "tabler", class: "w-5 h-5 text-red-600" %>
+        </div>
+      </div>
+      <div class="space-y-1">
+        <h3 class="text-2xl font-bold text-slate-900">
+          <%= @notes.where(due_date: @date.beginning_of_month..@date.end_of_month).count %>
+        </h3>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-xl p-6 border border-slate-100 hover:shadow-md transition-all">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-slate-600 font-medium">완료된 일</p>
+        <div class="p-2 bg-emerald-50 rounded-lg">
+          <%= icon "circle-check", library: "tabler", class: "w-5 h-5 text-emerald-600" %>
+        </div>
+      </div>
+      <div class="space-y-1">
+        <h3 class="text-2xl font-bold text-slate-900">
+          <%= @notes.joins(:status).where(statuses: { name: 'Done' }).count %>
+        </h3>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-xl p-6 border border-slate-100 hover:shadow-md transition-all">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-slate-600 font-medium">진행 중</p>
+        <div class="p-2 bg-yellow-50 rounded-lg">
+          <%= icon "refresh", library: "tabler", class: "w-5 h-5 text-yellow-600" %>
+        </div>
+      </div>
+      <div class="space-y-1">
+        <h3 class="text-2xl font-bold text-slate-900">
+          <%= @notes.joins(:status).where(statuses: { name: 'Doing' }).count %>
+        </h3>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  let draggedNoteId = null;
+  let draggedElement = null;
+  let originalDate = null;
+  let isDragging = false;
+
+window.handleDragStart = function(event, noteId, currentDate) {
+  isDragging = true;
+  draggedNoteId = noteId;
+  draggedElement = event.target.closest('.draggable-note');
+  originalDate = currentDate;
+  event.dataTransfer.effectAllowed = 'move';
+  // Set opacity on the draggable-note element, not the target
+  draggedElement.style.opacity = '0.5';
+}
+
+window.handleNoteClick = function(event, noteId) {
+  // 드래그 중이면 클릭 이벤트 무시
+  if (isDragging) {
+    return;
+  }
+  // 노트 상세 페이지로 이동
+  window.location.href = `/notes/${noteId}`;
+}
+
+window.handleDragOver = function(event) {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+  
+  // Visual feedback
+  const dayElement = event.currentTarget;
+  dayElement.classList.add('bg-[#FFF0F1]');
+}
+
+window.handleDragLeave = function(event) {
+  const dayElement = event.currentTarget;
+  dayElement.classList.remove('bg-[#FFF0F1]');
+}
+
+window.handleDrop = function(event, newDate) {
+  event.preventDefault();
+  
+  const dayElement = event.currentTarget;
+  dayElement.classList.remove('bg-[#FFF0F1]');
+  
+  if (draggedNoteId && newDate !== originalDate && draggedElement) {
+    // Move the element immediately for instant feedback
+    const targetContainer = dayElement.querySelector('.space-y-1');
+    const clonedElement = draggedElement.cloneNode(true);
+    
+    // Remove the dragged element from original position
+    draggedElement.remove();
+    
+    // Add to new position
+    if (targetContainer) {
+      // Reset opacity on cloned element
+      clonedElement.style.opacity = '';
+      
+      // Check if there's a "more notes" indicator
+      const moreIndicator = targetContainer.querySelector('.text-slate-500');
+      if (moreIndicator) {
+        targetContainer.insertBefore(clonedElement, moreIndicator);
+      } else {
+        targetContainer.appendChild(clonedElement);
+      }
+      
+      // Re-attach event listeners
+      setupDragListeners(clonedElement);
+    }
+    
+    // Update in the background
+    updateNoteDate(draggedNoteId, 'due_date', newDate);
+  }
+  
+  // Reset drag state
+  draggedNoteId = null;
+  draggedElement = null;
+  originalDate = null;
+  // isDragging 리셋을 약간 지연시켜 클릭 이벤트와 겹치지 않도록 함
+  setTimeout(() => {
+    isDragging = false;
+  }, 100);
+}
+
+function setupDragListeners(element) {
+  element.addEventListener('dragstart', function(e) {
+    const noteId = element.getAttribute('ondragstart').match(/handleDragStart\(event, (\d+),/)[1];
+    const date = element.getAttribute('ondragstart').match(/, '([^']+)'\)/)[1];
+    handleDragStart(e, noteId, date);
+  });
+  
+  element.addEventListener('dragend', function(e) {
+    element.style.opacity = '';
+    // isDragging 리셋을 약간 지연시켜 클릭 이벤트와 겹치지 않도록 함
+    setTimeout(() => {
+      isDragging = false;
+    }, 100);
+  });
+}
+
+function updateNoteDate(noteId, dateType, newDate) {
+  const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+  
+  // Show loading indicator
+  const notification = document.createElement('div');
+  notification.className = 'fixed bottom-4 right-4 bg-[#FF6D75] text-white px-4 py-2 rounded-lg shadow-lg z-50';
+  notification.textContent = '날짜 업데이트 중...';
+  document.body.appendChild(notification);
+  
+  fetch(`/notes/${noteId}/update_date`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': csrfToken
+    },
+    body: JSON.stringify({
+      date_type: dateType,
+      new_date: newDate
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Update notification
+      notification.textContent = '날짜가 업데이트되었습니다!';
+      notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      
+      // Remove notification after 2 seconds
+      setTimeout(() => {
+        notification.remove();
+      }, 2000);
+    } else {
+      // Reload on error to restore original state
+      window.location.reload();
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    // Reload on error to restore original state
+    window.location.reload();
+  });
+}
+
+// Reset opacity when drag ends
+document.addEventListener('dragend', function(event) {
+  const draggableNote = event.target.closest('.draggable-note');
+  if (draggableNote) {
+    draggableNote.style.opacity = '';
+  }
+  // isDragging 리셋을 약간 지연시켜 클릭 이벤트와 겹치지 않도록 함
+  setTimeout(() => {
+    isDragging = false;
+  }, 100);
+});
+
+window.showMoreNotes = function(date, count) {
+  alert(`${date}에 ${count}개의 노트가 있습니다.`);
+  // 추후 모달이나 사이드바로 상세 내용 표시 기능 추가 가능
+}
+
+// Initialize drag listeners on page load
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.draggable-note').forEach(setupDragListeners);
+});
+
+})(); // Close IIFE
+</script>

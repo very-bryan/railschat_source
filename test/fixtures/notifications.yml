@@ -1,0 +1,17 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  user: one
+  title: MyString
+  body: MyText
+  notification_type: MyString
+  read: false
+  priority: 1
+
+two:
+  user: two
+  title: MyString
+  body: MyText
+  notification_type: MyString
+  read: false
+  priority: 1

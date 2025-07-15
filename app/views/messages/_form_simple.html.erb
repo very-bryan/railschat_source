@@ -1,0 +1,216 @@
+<div>
+  <form id="new_message_<%= channel.id %>" 
+        enctype="multipart/form-data" 
+        action="<%= channel_messages_path(channel) %>" 
+        accept-charset="UTF-8" 
+        data-turbo-stream="true"
+        method="post"
+        class="flex items-center gap-3 bg-slate-50 rounded-lg px-4 py-3">
+    <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>" />
+    
+    <div class="relative">
+      <button type="button" 
+              onclick="event.stopPropagation(); document.getElementById('attachmentMenu_<%= channel.id %>').classList.toggle('hidden')" 
+              class="text-slate-400 hover:text-slate-600">
+        <%= icon "paperclip", library: "tabler", class: "w-5 h-5" %>
+      </button>
+      <!-- Attachment Menu -->
+      <div id="attachmentMenu_<%= channel.id %>" class="hidden absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-lg border border-slate-200 py-1 min-w-[160px]">
+        <button type="button" 
+                onclick="document.getElementById('attachmentMenu_<%= channel.id %>').classList.add('hidden'); document.getElementById('fileInput_<%= channel.id %>').click()" 
+                class="w-full px-4 py-2 text-sm text-left hover:bg-slate-50 flex items-center gap-2">
+          <%= icon "file", library: "tabler", class: "w-4 h-4 text-slate-500" %>
+          <span>파일 첨부</span>
+        </button>
+        <button type="button" 
+                onclick="document.getElementById('attachmentMenu_<%= channel.id %>').classList.add('hidden'); showNoteSelector_<%= channel.id %>()" 
+                class="w-full px-4 py-2 text-sm text-left hover:bg-slate-50 flex items-center gap-2">
+          <%= icon "note", library: "tabler", class: "w-4 h-4 text-slate-500" %>
+          <span>노트 첨부</span>
+        </button>
+      </div>
+    </div>
+    
+    <!-- File Input (Hidden) -->
+    <input type="file" 
+           name="message[files][]" 
+           multiple="multiple" 
+           class="hidden" 
+           id="fileInput_<%= channel.id %>" 
+           accept="image/*,video/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar" />
+    
+    <!-- Hidden fields for attachments -->
+    <input type="hidden" name="message[attached_note_id]" id="attachedNoteId_<%= channel.id %>" value="">
+    
+    <input type="text" 
+           name="message[body]" 
+           placeholder="#<%= channel.name %>에 메시지를 입력하세요..."
+           class="flex-1 bg-transparent outline-none text-sm placeholder-slate-400"
+           autocomplete="off"
+           onkeydown="handleKeyPress_<%= channel.id %>(event)" />
+    <input type="hidden" name="message[parent_message_id]" id="parentMessageId_<%= channel.id %>" value="">
+    <button type="submit" class="hidden">전송</button>
+    <button type="submit">
+      <%= icon "send", library: "tabler", class: "w-5 h-5 text-slate-400 cursor-pointer hover:text-slate-600" %>
+    </button>
+  </form>
+  
+  <!-- Attachment Preview -->
+  <div id="attachmentPreview_<%= channel.id %>" class="hidden mt-2 p-2 bg-white border border-slate-200 rounded-md">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xs text-slate-600">첨부</span>
+      <button type="button" 
+              onclick="clearAttachments_<%= channel.id %>()" 
+              class="text-slate-400 hover:text-slate-600">
+        <%= icon "x", library: "tabler", class: "w-4 h-4" %>
+      </button>
+    </div>
+    <div id="attachmentList_<%= channel.id %>" class="space-y-1"></div>
+  </div>
+</div>
+
+<script>
+// Define functions for channel <%= channel.id %>
+window.showNoteSelector_<%= channel.id %> = function() {
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 z-50 flex items-center justify-center';
+  modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+  
+  const modalContent = document.createElement('div');
+  modalContent.className = 'bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[80vh] overflow-hidden';
+  modalContent.innerHTML = [
+    '<div class="border-b border-slate-200 p-4">',
+    '<h3 class="text-lg font-semibold text-slate-900">노트 선택</h3>',
+    '</div>',
+    '<div class="p-4 max-h-[60vh] overflow-y-auto" id="notesList_<%= channel.id %>">',
+    '<div class="text-center py-8 text-slate-500">',
+    '<p>노트를 불러오는 중...</p>',
+    '</div>',
+    '</div>',
+    '<div class="border-t border-slate-200 p-4 flex justify-end">',
+    '<button type="button" onclick="this.closest(\'.fixed\').remove()" class="px-4 py-2 text-sm font-medium text-slate-700 hover:text-slate-900">취소</button>',
+    '</div>'
+  ].join('');
+  
+  modal.appendChild(modalContent);
+  document.body.appendChild(modal);
+  
+  // Close on outside click
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) {
+      modal.remove();
+    }
+  });
+  
+  // Fetch notes
+  fetch('/notes.json', {
+    headers: {
+      'Accept': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    const notesList = document.getElementById('notesList_<%= channel.id %>');
+    const notes = Array.isArray(data) ? data : (data.notes || []);
+    
+    if (notes.length > 0) {
+      notesList.innerHTML = notes.map(note => {
+        const noteId = note.id;
+        const noteTitle = (note.title || '').replace(/'/g, "\\'");
+        return [
+          '<div class="p-3 border border-slate-200 rounded-md mb-2 cursor-pointer hover:bg-slate-50"',
+          'onclick="selectNote_<%= channel.id %>(' + noteId + ', \'' + noteTitle + '\')">',
+          '<h4 class="font-medium text-slate-900">' + (note.title || '') + '</h4>',
+          note.content ? '<p class="text-sm text-slate-600 mt-1">' + note.content.substring(0, 100) + '...</p>' : '',
+          '</div>'
+        ].join('');
+      }).join('');
+    } else {
+      notesList.innerHTML = '<p class="text-center text-slate-500">노트가 없습니다.</p>';
+    }
+  })
+  .catch(error => {
+    console.error('Failed to load notes:', error);
+    const notesList = document.getElementById('notesList_<%= channel.id %>');
+    notesList.innerHTML = '<p class="text-center text-red-500">노트를 불러오는데 실패했습니다.</p>';
+  });
+};
+
+window.selectNote_<%= channel.id %> = function(noteId, noteTitle) {
+  document.getElementById('attachedNoteId_<%= channel.id %>').value = noteId;
+  
+  const preview = document.getElementById('attachmentPreview_<%= channel.id %>');
+  const list = document.getElementById('attachmentList_<%= channel.id %>');
+  
+  list.innerHTML = [
+    '<div class="flex items-center gap-2 text-xs">',
+    '<svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">',
+    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>',
+    '</svg>',
+    '<span class="text-slate-600 truncate">' + noteTitle + '</span>',
+    '</div>'
+  ].join('');
+  
+  preview.classList.remove('hidden');
+  
+  // Close modal
+  const modals = document.querySelectorAll('.fixed.inset-0.z-50');
+  modals.forEach(m => m.remove());
+};
+
+window.clearAttachments_<%= channel.id %> = function() {
+  document.getElementById('fileInput_<%= channel.id %>').value = '';
+  document.getElementById('attachedNoteId_<%= channel.id %>').value = '';
+  document.getElementById('attachmentPreview_<%= channel.id %>').classList.add('hidden');
+  document.getElementById('attachmentList_<%= channel.id %>').innerHTML = '';
+};
+
+// Handle file selection
+document.getElementById('fileInput_<%= channel.id %>').addEventListener('change', function() {
+  const files = Array.from(this.files);
+  const preview = document.getElementById('attachmentPreview_<%= channel.id %>');
+  const list = document.getElementById('attachmentList_<%= channel.id %>');
+  
+  if (files.length > 0) {
+    list.innerHTML = '';
+    
+    files.forEach(file => {
+      const item = document.createElement('div');
+      item.className = 'flex items-center gap-2 text-xs';
+      
+      const iconHtml = file.type.startsWith('image/') 
+        ? '<svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>'
+        : '<svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>';
+      
+      item.innerHTML = iconHtml + '<span class="text-slate-600 truncate">' + file.name + '</span>';
+      list.appendChild(item);
+    });
+    
+    preview.classList.remove('hidden');
+  }
+});
+
+function handleKeyPress_<%= channel.id %>(event) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    document.getElementById('new_message_<%= channel.id %>').querySelector('button[type="submit"]').click();
+  }
+}
+
+// Clear attachments after form submission
+document.getElementById('new_message_<%= channel.id %>').addEventListener('turbo:submit-end', function(event) {
+  if (event.detail.success) {
+    clearAttachments_<%= channel.id %>();
+  }
+});
+
+// Close attachment menu on outside click
+document.addEventListener('click', function(e) {
+  const menu = document.getElementById('attachmentMenu_<%= channel.id %>');
+  if (menu && !menu.contains(e.target) && !e.target.closest('button[onclick*="attachmentMenu_<%= channel.id %>"]')) {
+    menu.classList.add('hidden');
+  }
+});
+</script>

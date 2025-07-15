@@ -1,0 +1,101 @@
+<div class="max-w-7xl mx-auto">
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-slate-900">사용자 관리</h1>
+  </div>
+
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+    <table class="min-w-full divide-y divide-slate-200">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+            사용자
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+            이메일
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+            워크스페이스
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+            가입일
+          </th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+            권한
+          </th>
+          <th class="relative px-6 py-3">
+            <span class="sr-only">작업</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-slate-200">
+        <% @users.each do |user| %>
+          <tr class="hover:bg-slate-50">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div class="flex-shrink-0 h-10 w-10">
+                  <div class="h-10 w-10 rounded-full bg-[#FF6D75] flex items-center justify-center">
+                    <span class="text-white font-medium">
+                      <%= user.name.present? ? user.name.first.upcase : user.email.first.upcase %>
+                    </span>
+                  </div>
+                </div>
+                <div class="ml-4">
+                  <div class="text-sm font-medium text-slate-900">
+                    <%= user.name || "이름 없음" %>
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-slate-900"><%= user.email %></div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-slate-900">
+                <%= user.workspaces.count %>개
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+              <%= user.created_at.strftime("%Y-%m-%d") %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <% if user.admin? %>
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                  관리자
+                </span>
+              <% else %>
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-800">
+                  일반 사용자
+                </span>
+              <% end %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <div class="flex items-center justify-end gap-2">
+                <%= link_to admin_user_path(user), class: "text-[#FF6D75] hover:text-[#FF5561]" do %>
+                  <%= icon "eye", class: "w-4 h-4" %>
+                <% end %>
+                
+                <%= button_to toggle_admin_admin_user_path(user), method: :patch, class: "text-slate-600 hover:text-slate-900", data: { turbo_confirm: user.admin? ? "관리자 권한을 제거하시겠습니까?" : "관리자 권한을 부여하시겠습니까?" } do %>
+                  <% if user.admin? %>
+                    <%= icon "shield-off", class: "w-4 h-4" %>
+                  <% else %>
+                    <%= icon "shield-check", class: "w-4 h-4" %>
+                  <% end %>
+                <% end %>
+                
+                <%= link_to edit_admin_user_path(user), class: "text-slate-600 hover:text-slate-900" do %>
+                  <%= icon "pencil", class: "w-4 h-4" %>
+                <% end %>
+                
+                <% unless user == current_user %>
+                  <%= button_to admin_user_path(user), method: :delete, class: "text-red-600 hover:text-red-900", data: { turbo_confirm: "정말로 이 사용자를 삭제하시겠습니까?" } do %>
+                    <%= icon "trash", class: "w-4 h-4" %>
+                  <% end %>
+                <% end %>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

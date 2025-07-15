@@ -1,0 +1,147 @@
+<% content_for :page_title, "결제 관리" %>
+
+<div class="space-y-6">
+  <!-- Revenue Overview -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-slate-600">월 수익</p>
+          <p class="text-2xl font-bold text-slate-900 mt-1">₩<%= number_with_delimiter(@total_revenue) %></p>
+          <p class="text-xs text-slate-500 mt-1">이번 달</p>
+        </div>
+        <div class="p-3 bg-green-100 rounded-lg">
+          <%= icon "currency", class: "w-6 h-6 text-green-600" %>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-slate-600">활성 구독</p>
+          <p class="text-2xl font-bold text-slate-900 mt-1"><%= @active_subscriptions %></p>
+          <p class="text-xs text-slate-500 mt-1">유료 플랜</p>
+        </div>
+        <div class="p-3 bg-blue-100 rounded-lg">
+          <%= icon "currency", class: "w-6 h-6 text-blue-600" %>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-slate-600">체험판</p>
+          <p class="text-2xl font-bold text-slate-900 mt-1"><%= @trial_workspaces %></p>
+          <p class="text-xs text-slate-500 mt-1">무료 플랜</p>
+        </div>
+        <div class="p-3 bg-yellow-100 rounded-lg">
+          <%= icon "clock", class: "w-6 h-6 text-yellow-600" %>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-slate-600">전환율</p>
+          <p class="text-2xl font-bold text-slate-900 mt-1">0%</p>
+          <p class="text-xs text-slate-500 mt-1">무료 → 유료</p>
+        </div>
+        <div class="p-3 bg-purple-100 rounded-lg">
+          <%= icon "arrow-up", class: "w-6 h-6 text-purple-600" %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Subscription Plans -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+    <div class="px-6 py-4 border-b border-slate-200">
+      <h3 class="text-lg font-semibold text-slate-900">구독 플랜 현황</h3>
+    </div>
+    <div class="p-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <% @subscription_breakdown.each do |plan, count| %>
+          <div class="text-center p-4 bg-slate-50 rounded-lg">
+            <p class="text-sm font-medium text-slate-600"><%= plan %></p>
+            <p class="text-2xl font-bold text-slate-900 mt-2"><%= count %></p>
+            <p class="text-xs text-slate-500 mt-1">워크스페이스</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Transactions -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+    <div class="px-6 py-4 border-b border-slate-200">
+      <h3 class="text-lg font-semibold text-slate-900">최근 거래 내역</h3>
+    </div>
+    <div class="p-6">
+      <% if @recent_transactions.empty? %>
+        <div class="text-center py-8">
+          <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <%= icon "receipt", class: "w-8 h-8 text-slate-400" %>
+          </div>
+          <p class="text-sm text-slate-500">아직 거래 내역이 없습니다</p>
+          <p class="text-xs text-slate-400 mt-1">유료 플랜이 활성화되면 여기에 표시됩니다</p>
+        </div>
+      <% else %>
+        <table class="min-w-full">
+          <thead>
+            <tr class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+              <th class="pb-3">워크스페이스</th>
+              <th class="pb-3">플랜</th>
+              <th class="pb-3">금액</th>
+              <th class="pb-3">상태</th>
+              <th class="pb-3">날짜</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200">
+            <!-- Transactions would be listed here -->
+          </tbody>
+        </table>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Billing Settings -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+    <div class="px-6 py-4 border-b border-slate-200">
+      <h3 class="text-lg font-semibold text-slate-900">결제 설정</h3>
+    </div>
+    <div class="p-6 space-y-4">
+      <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+        <div>
+          <p class="text-sm font-medium text-slate-900">결제 게이트웨이</p>
+          <p class="text-xs text-slate-500 mt-1">현재 사용 중인 결제 시스템</p>
+        </div>
+        <span class="text-sm text-slate-600">미설정</span>
+      </div>
+      
+      <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+        <div>
+          <p class="text-sm font-medium text-slate-900">자동 청구</p>
+          <p class="text-xs text-slate-500 mt-1">구독 자동 갱신 설정</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" class="sr-only peer" disabled>
+          <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+        </label>
+      </div>
+      
+      <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+        <div>
+          <p class="text-sm font-medium text-slate-900">청구서 발행</p>
+          <p class="text-xs text-slate-500 mt-1">자동 청구서 이메일 발송</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" class="sr-only peer" disabled>
+          <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+        </label>
+      </div>
+    </div>
+  </div>
+</div>

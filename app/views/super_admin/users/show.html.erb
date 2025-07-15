@@ -1,0 +1,214 @@
+<% content_for :page_title, @user.name %>
+
+<div class="space-y-6">
+  <!-- Header with Actions -->
+  <div class="flex items-center justify-between">
+    <div class="flex items-center space-x-4">
+      <div class="w-16 h-16 bg-gradient-to-br from-purple-600 to-purple-800 rounded-full flex items-center justify-center">
+        <span class="text-white text-2xl font-medium">
+          <%= @user.name.first.upcase %>
+        </span>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900"><%= @user.name %></h1>
+        <p class="text-slate-600"><%= @user.email %></p>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-3">
+      <% unless @user == current_user %>
+        <%= link_to impersonate_super_admin_user_path(@user), 
+            method: :post,
+            class: "px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50 flex items-center gap-2",
+            data: { confirm: "#{@user.email}로 로그인하시겠습니까?" } do %>
+          <%= icon "user", class: "w-4 h-4" %>
+          사용자로 로그인
+        <% end %>
+      <% end %>
+      
+      <%= link_to edit_super_admin_user_path(@user), 
+          class: "px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center gap-2" do %>
+        <%= icon "pencil", class: "w-4 h-4" %>
+        편집
+      <% end %>
+    </div>
+  </div>
+
+  <!-- User Info Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-600">역할</p>
+          <% if @user.super_admin? %>
+            <p class="text-lg font-bold text-red-600">슈퍼 관리자</p>
+          <% elsif @user.admin? %>
+            <p class="text-lg font-bold text-purple-600">관리자</p>
+          <% else %>
+            <p class="text-lg font-bold text-slate-600">일반 사용자</p>
+          <% end %>
+        </div>
+        <%= icon "shield", class: "w-8 h-8 text-slate-400" %>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-600">워크스페이스</p>
+          <p class="text-2xl font-bold text-slate-900"><%= @workspaces.count %></p>
+        </div>
+        <%= icon "building", class: "w-8 h-8 text-slate-400" %>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-600">노트</p>
+          <p class="text-2xl font-bold text-slate-900"><%= @notes_count %></p>
+        </div>
+        <%= icon "file", class: "w-8 h-8 text-slate-400" %>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-slate-600">메시지</p>
+          <p class="text-2xl font-bold text-slate-900"><%= @messages_count %></p>
+        </div>
+        <%= icon "message", class: "w-8 h-8 text-slate-400" %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail Sections -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Account Information -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+      <div class="px-6 py-4 border-b border-slate-200">
+        <h3 class="text-lg font-semibold text-slate-900">계정 정보</h3>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase">이메일</p>
+          <p class="mt-1 text-sm text-slate-900"><%= @user.email %></p>
+        </div>
+        
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase">이름</p>
+          <p class="mt-1 text-sm text-slate-900"><%= @user.first_name %> <%= @user.last_name %></p>
+        </div>
+        
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase">가입일</p>
+          <p class="mt-1 text-sm text-slate-900"><%= @user.created_at.strftime("%Y년 %m월 %d일 %H:%M") %></p>
+        </div>
+        
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase">마지막 활동</p>
+          <% if @last_activity %>
+            <p class="mt-1 text-sm text-slate-900">
+              <%= @last_activity.strftime("%Y년 %m월 %d일 %H:%M") %>
+              <span class="text-slate-500">(<%= time_ago_in_words(@last_activity) %> 전)</span>
+            </p>
+          <% else %>
+            <p class="mt-1 text-sm text-slate-400">활동 없음</p>
+          <% end %>
+        </div>
+        
+        <div>
+          <p class="text-xs font-medium text-slate-500 uppercase">현재 워크스페이스</p>
+          <% if @user.current_workspace %>
+            <p class="mt-1 text-sm text-slate-900">
+              <%= link_to @user.current_workspace.name, super_admin_workspace_path(@user.current_workspace), 
+                  class: "text-purple-600 hover:text-purple-700" %>
+            </p>
+          <% else %>
+            <p class="mt-1 text-sm text-slate-400">없음</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Workspaces -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+      <div class="px-6 py-4 border-b border-slate-200">
+        <h3 class="text-lg font-semibold text-slate-900">소속 워크스페이스</h3>
+      </div>
+      <div class="divide-y divide-slate-200 max-h-96 overflow-y-auto">
+        <% @workspaces.each do |workspace| %>
+          <% member = workspace.workspace_members.find_by(user: @user) %>
+          <div class="px-6 py-4 hover:bg-slate-50">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="text-sm font-medium text-slate-900">
+                  <%= link_to workspace.name, super_admin_workspace_path(workspace), 
+                      class: "hover:text-purple-600" %>
+                </h4>
+                <p class="text-xs text-slate-500 mt-1">
+                  멤버 <%= workspace.users.count %>명 • 노트 <%= workspace.notes.count %>개
+                </p>
+              </div>
+              <div class="text-right">
+                <% if member %>
+                  <span class="px-2 py-1 text-xs font-medium rounded-full <%= member.role == 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-700' %>">
+                    <%= member.role == 'admin' ? '관리자' : '멤버' %>
+                  </span>
+                  <p class="text-xs text-slate-500 mt-1">
+                    <%= member.created_at.strftime("%Y-%m-%d") %> 가입
+                  </p>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+        
+        <% if @workspaces.empty? %>
+          <div class="px-6 py-8 text-center">
+            <p class="text-sm text-slate-500">소속된 워크스페이스가 없습니다</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+    <h3 class="text-lg font-semibold text-slate-900 mb-4">사용자 작업</h3>
+    
+    <div class="space-y-4">
+      <% unless @user == current_user %>
+        <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+          <div>
+            <p class="text-sm font-medium text-slate-900">슈퍼 관리자 권한</p>
+            <p class="text-xs text-slate-500 mt-1">
+              <%= @user.super_admin? ? "현재 슈퍼 관리자 권한을 가지고 있습니다" : "일반 사용자입니다" %>
+            </p>
+          </div>
+          <%= button_to toggle_super_admin_super_admin_user_path(@user),
+              method: :patch,
+              class: "px-4 py-2 #{@user.super_admin? ? 'bg-orange-600 hover:bg-orange-700' : 'bg-purple-600 hover:bg-purple-700'} text-white text-sm rounded-md" do %>
+            <%= @user.super_admin? ? "권한 제거" : "권한 부여" %>
+          <% end %>
+        </div>
+      <% end %>
+      
+      <div class="border-t border-slate-200 pt-4">
+        <h4 class="text-sm font-medium text-red-900 mb-3">위험 영역</h4>
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p class="text-sm text-red-800 mb-3">
+            사용자를 삭제하면 모든 데이터가 영구적으로 삭제되며 복구할 수 없습니다.
+          </p>
+          <% unless @user == current_user %>
+            <%= button_to "사용자 삭제", super_admin_user_path(@user), 
+                method: :delete,
+                data: { confirm: "정말로 이 사용자를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다." },
+                class: "px-4 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700" %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,411 @@
+<% show_header = should_show_header?(message, previous_message) %>
+
+<% if message.is_shared? %>
+  <div class="mx-4 mb-3 rounded-lg bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-200 overflow-hidden">
+    <div class="px-4 py-2 bg-slate-100 border-b border-slate-200">
+      <div class="flex items-center gap-2 text-sm">
+        <%= icon "share-2", library: "tabler", class: "w-4 h-4 text-slate-600" %>
+        <span class="font-medium text-slate-700">
+          <%= message.shared_by_user.name %>님이 공유
+        </span>
+        <span class="text-slate-500">•</span>
+        <span class="text-slate-500">
+          #<%= message.shared_from_channel.name %>에서
+        </span>
+      </div>
+    </div>
+    <div class="p-4 bg-white/50">
+      <div class="group relative flex gap-3" id="message-<%= message.id %>" data-user-id="<%= message.user.id %>" data-message-body="<%= message.body %>">
+<% else %>
+  <div class="group relative flex gap-3 <%= show_header ? 'pt-4' : 'pt-0.5' %> px-4 hover:bg-slate-50 transition-colors <%= 'border-l-2 border-[#FF6D75]/30' if message.parent_message_id.present? %>" id="message-<%= message.id %>" data-user-id="<%= message.user.id %>" data-message-body="<%= message.body %>">
+<% end %>
+  <!-- Avatar or Placeholder -->
+  <div class="flex-shrink-0 w-8">
+    <% if show_header %>
+      <% if message.user.avatar_url.present? %>
+        <%= image_tag message.user.avatar_url, alt: message.user.name, class: "w-8 h-8 rounded-full" %>
+      <% else %>
+        <div class="w-8 h-8 bg-gradient-to-br from-[#FF6D75] to-[#E85560] rounded-full flex items-center justify-center">
+          <span class="text-white text-xs font-medium"><%= message.user.name.first.upcase %></span>
+        </div>
+      <% end %>
+    <% else %>
+      <!-- Time on hover for grouped messages -->
+      <span class="text-xs text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+        <%= format_message_time(message) %>
+      </span>
+    <% end %>
+  </div>
+  
+  <!-- Message Content -->
+  <div class="flex-1 min-w-0">
+    <% if show_header %>
+      <div class="flex items-baseline gap-2 mb-1">
+        <span class="text-sm font-semibold text-slate-900"><%= message.user.name %></span>
+        <span class="text-xs text-slate-500"><%= format_message_time(message) %></span>
+        <% if message.is_pinned? %>
+          <span class="text-amber-600" title="고정된 메시지">📌</span>
+        <% end %>
+        <% if message.edited_at.present? %>
+          <span class="text-xs text-slate-400" title="<%= message.edited_at.strftime('%Y년 %m월 %d일 %H:%M') %>에 수정됨">(수정됨)</span>
+        <% end %>
+        <% if message.user == current_user %>
+          <span class="read-indicator text-xs text-slate-400 ml-auto">
+            <% if message.readers.count > 1 %>
+              ✓✓ <%= message.readers.count - 1 %>
+            <% else %>
+              ✓
+            <% end %>
+          </span>
+        <% end %>
+      </div>
+    <% end %>
+    
+    <% if message.parent_message_id.present? && message.parent_message %>
+      <p class="text-sm text-slate-700 break-words" id="message-content-<%= message.id %>">
+        <span class="inline-flex items-center gap-1 text-xs text-slate-500 mr-1">
+          <span class="text-slate-400">↩️</span>
+          <span class="text-purple-600">@<%= message.parent_message.user.name %></span>
+        </span><%= raw message.body_with_mentions_html %>
+      </p>
+    <% else %>
+      <p class="text-sm text-slate-700 break-words" id="message-content-<%= message.id %>"><%= raw message.body_with_mentions_html %></p>
+    <% end %>
+    
+    <!-- Attachments -->
+    <% if message.has_attachments? %>
+      <div class="mt-3">
+        <% images = message.image_attachments %>
+        <% videos = message.video_attachments %>
+        <% files = message.non_image_attachments %>
+        
+        <% if images.any? %>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-2 max-w-md">
+            <% images.each_with_index do |attachment, index| %>
+              <div class="relative group rounded-lg overflow-hidden border border-slate-200 hover:border-slate-300 transition-all cursor-pointer bg-slate-100"
+                   onclick="showImageModal('<%= cloudinary_modal_image_url(attachment, width: 1200, height: 1200) %>', '<%= attachment.filename %>')">
+                <!-- Loading placeholder -->
+                <div class="absolute inset-0 flex items-center justify-center bg-slate-100">
+                  <svg class="animate-spin h-8 w-8 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </div>
+                <%= cloudinary_optimized_image_tag attachment, 
+                    alt: attachment.filename,
+                    size: "300x300",
+                    quality: "auto:low",
+                    class: "w-full h-32 object-cover group-hover:scale-105 transition-transform relative z-10",
+                    loading: index < 3 ? 'eager' : 'lazy',
+                    onload: "this.style.opacity='1'; this.previousElementSibling.style.display='none';",
+                    style: "opacity: 0; transition: opacity 0.3s;",
+                    onerror: "this.style.opacity='1'; this.previousElementSibling.innerHTML='<span class=\"text-xs text-slate-500\">이미지 로드 실패</span>';" %>
+                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all"></div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+        
+        <% if videos.any? %>
+          <div class="<%= images.any? ? 'mt-2' : '' %> grid grid-cols-1 md:grid-cols-2 gap-2 max-w-2xl">
+            <% videos.each do |attachment| %>
+              <div class="relative rounded-lg overflow-hidden border border-slate-200">
+                <%= video_tag attachment,
+                    controls: true,
+                    class: "w-full h-auto max-h-96 bg-black",
+                    preload: "metadata",
+                    playsinline: true,
+                    muted: true,
+                    style: "max-width: 100%;" %>
+                <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1">
+                  <%= attachment.filename %> (<%= attachment.blob.content_type %>)
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+        
+        <% if files.any? %>
+          <div class="<%= images.any? || videos.any? ? 'mt-2' : '' %> space-y-2">
+            <% files.each do |attachment| %>
+              <a href="<%= polymorphic_url(attachment) %>" 
+                 download="<%= attachment.filename %>"
+                 class="inline-flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg hover:border-slate-300 transition-all group">
+                <span class="text-2xl"><%= getFileIconServer(attachment.filename.extension_without_delimiter) %></span>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-slate-700 group-hover:text-[#FF6D75] transition-colors truncate">
+                    <%= attachment.filename %>
+                  </p>
+                  <p class="text-xs text-slate-500"><%= number_to_human_size(attachment.byte_size) %></p>
+                </div>
+                <%= icon "download", library: "tabler", class: "w-4 h-4 text-slate-400 group-hover:text-slate-600" %>
+              </a>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+    
+    <!-- Note Preview -->
+    <% if message.note.present? %>
+      <div class="mt-3">
+        <a href="<%= note_path(message.note) %>" 
+           class="flex items-center gap-3 p-4 bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-lg hover:border-[#FF6D75] transition-all group">
+          <div class="flex-shrink-0">
+            <%= icon "note", library: "tabler", class: "w-10 h-10 text-[#FF6D75]" %>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h4 class="font-medium text-slate-900 group-hover:text-[#FF6D75] transition-colors truncate">
+              <%= message.note.title %>
+            </h4>
+            <p class="text-sm text-slate-600 mt-1 line-clamp-1"><%= message.note.body.truncate(80) %></p>
+            <div class="flex items-center gap-3 mt-2">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium" 
+                    style="background-color: <%= message.note.category.color %>20; color: <%= message.note.category.color %>">
+                <%= message.note.category.name %>
+              </span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium" 
+                    style="background-color: <%= message.note.status.color %>20; color: <%= message.note.status.color %>">
+                <%= message.note.status.name %>
+              </span>
+            </div>
+          </div>
+          <%= icon "chevron-right", library: "tabler", class: "w-5 h-5 text-slate-400 group-hover:text-[#FF6D75] transition-colors" %>
+        </a>
+      </div>
+    <% end %>
+    
+    <!-- YouTube Preview -->
+    <% if message.has_youtube_links? %>
+      <div class="mt-3 space-y-3">
+        <% message.youtube_urls.each do |youtube| %>
+          <div class="youtube-preview relative rounded-lg overflow-hidden border border-slate-200 hover:border-slate-300 transition-colors max-w-md">
+            <div class="relative aspect-video bg-slate-100">
+              <iframe 
+                src="https://www.youtube.com/embed/<%= youtube[:id] %>?rel=0&modestbranding=1" 
+                title="YouTube video player" 
+                frameborder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                allowfullscreen
+                class="absolute inset-0 w-full h-full"
+                loading="lazy">
+              </iframe>
+            </div>
+            <div class="p-3 bg-white">
+              <div class="flex items-center gap-2">
+                <div class="flex-shrink-0">
+                  <svg class="w-5 h-5 text-red-600" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                </div>
+                <a href="<%= youtube[:url] %>" target="_blank" rel="noopener noreferrer" class="text-xs text-slate-500 hover:text-slate-700 truncate">
+                  <%= youtube[:url] %>
+                </a>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+    
+    <!-- Web Link Preview -->
+    <% if message.has_web_links? %>
+      <div class="mt-3 space-y-3">
+        <% message.link_previews.each do |preview| %>
+          <% if preview[:is_google_doc] && preview[:google_info] %>
+            <% google_info = preview[:google_info] %>
+            <a href="<%= preview[:url] %>" target="_blank" rel="noopener noreferrer" 
+               class="google-docs-preview group">
+              <div class="flex-shrink-0">
+                <% case google_info[:type] %>
+                <% when :document %>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <rect width="20" height="20" rx="4" fill="#4285F4"/>
+                    <path d="M6 7h8M6 10h8M6 13h5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                <% when :spreadsheet %>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <rect width="20" height="20" rx="4" fill="#0F9D58"/>
+                    <rect x="5" y="5" width="4" height="4" fill="white"/>
+                    <rect x="11" y="5" width="4" height="4" fill="white"/>
+                    <rect x="5" y="11" width="4" height="4" fill="white"/>
+                    <rect x="11" y="11" width="4" height="4" fill="white"/>
+                  </svg>
+                <% when :presentation %>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <rect width="20" height="20" rx="4" fill="#F4B400"/>
+                    <rect x="5" y="7" width="10" height="6" fill="white"/>
+                  </svg>
+                <% when :forms %>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <rect width="20" height="20" rx="4" fill="#673AB7"/>
+                    <circle cx="6" cy="7" r="1" fill="white"/>
+                    <circle cx="6" cy="10" r="1" fill="white"/>
+                    <circle cx="6" cy="13" r="1" fill="white"/>
+                    <rect x="9" y="6.5" width="6" height="1" fill="white"/>
+                    <rect x="9" y="9.5" width="6" height="1" fill="white"/>
+                    <rect x="9" y="12.5" width="6" height="1" fill="white"/>
+                  </svg>
+                <% end %>
+              </div>
+              <span class="text-sm text-slate-700 group-hover:text-[#FF6D75] transition-colors">
+                <%= preview[:title] || google_info[:name] %>
+              </span>
+            </a>
+          <% else %>
+            <a href="<%= preview[:url] %>" target="_blank" rel="noopener noreferrer" 
+               class="link-preview block rounded-lg overflow-hidden border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md max-w-md group">
+              <% if preview[:image].present? %>
+                <div class="relative h-48 bg-slate-100 overflow-hidden">
+                  <%= image_tag preview[:image], 
+                      alt: preview[:title], 
+                      class: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300",
+                      loading: "lazy",
+                      onerror: "this.style.display='none'" %>
+                </div>
+              <% end %>
+              <div class="p-4 bg-white">
+                <div class="flex items-start gap-3">
+                  <% if preview[:favicon].present? %>
+                  <img src="<%= preview[:favicon] %>" alt="" class="w-4 h-4 mt-0.5 flex-shrink-0" onerror="this.style.display='none'">
+                  <% end %>
+                  <div class="flex-1 min-w-0">
+                  <% if preview[:title].present? %>
+                    <h3 class="font-medium text-slate-900 line-clamp-2 group-hover:text-[#FF6D75] transition-colors">
+                      <%= preview[:title] %>
+                    </h3>
+                  <% end %>
+                  <% if preview[:description].present? %>
+                    <p class="mt-1 text-sm text-slate-600 line-clamp-2">
+                      <%= preview[:description] %>
+                    </p>
+                  <% end %>
+                  <p class="mt-2 text-xs text-slate-400">
+                    <%= preview[:site_name] || URI.parse(preview[:url]).host %>
+                  </p>
+                  </div>
+                </div>
+              </div>
+            </a>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+    
+    <!-- Reactions -->
+    <% if message.reactions.any? %>
+      <div class="flex flex-wrap gap-2 mt-2">
+        <% message.reactions.group_by(&:emoji).each do |emoji, reactions| %>
+          <div class="relative group/reaction">
+            <button class="inline-flex items-center gap-1 hover:scale-110 transition-transform"
+                    onclick="toggleReaction('<%= message.id %>', '<%= emoji %>')">
+              <span class="text-xl"><%= emoji %></span>
+              <span class="text-xs font-medium text-slate-500"><%= reactions.count %></span>
+            </button>
+            <!-- Tooltip -->
+            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/reaction:block z-50 pointer-events-none">
+              <div class="bg-slate-900 text-white text-xs rounded-lg py-2 px-3 min-w-max max-w-xs">
+                <% if reactions.count > 10 %>
+                  <div class="font-medium mb-1"><%= emoji %> <%= reactions.count %>명이 반응했습니다</div>
+                  <div class="max-h-32 overflow-y-auto">
+                    <% reactions.first(10).each_with_index do |reaction, index| %>
+                      <div class="<%= 'mb-0.5' if index < 9 %>">
+                        <%= reaction.user.name %>
+                      </div>
+                    <% end %>
+                    <div class="mt-1 text-slate-400">
+                      외 <%= reactions.count - 10 %>명...
+                    </div>
+                  </div>
+                <% else %>
+                  <div class="max-h-32 overflow-y-auto">
+                    <% reactions.each_with_index do |reaction, index| %>
+                      <div class="<%= 'mb-0.5' if index < reactions.length - 1 %>">
+                        <%= reaction.user.name %>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+                <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1">
+                  <div class="border-4 border-transparent border-t-slate-900"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+    
+    <!-- Thread Preview -->
+    <% if message.thread_messages.any? %>
+      <div class="mt-2 flex items-center gap-3" id="thread-preview-<%= message.id %>">
+        <button class="text-xs text-purple-600 hover:underline flex items-center gap-1" onclick="toggleThreadReplies('<%= message.id %>')">
+          <span id="thread-chevron-<%= message.id %>" class="transition-transform">▼</span>
+          <span id="thread-count-<%= message.id %>">답글 <%= message.thread_messages.count %>개</span>
+        </button>
+        <button class="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1" onclick="showThread('<%= message.id %>')">
+          <%= icon "message-circle", library: "tabler", class: "w-3 h-3" %>
+          스레드 보기
+        </button>
+      </div>
+    <% else %>
+      <!-- Empty container for future thread preview -->
+      <div class="hidden mt-2 flex items-center gap-3" id="thread-preview-<%= message.id %>"></div>
+    <% end %>
+  </div>
+  
+  <!-- Action Buttons (Hover) -->
+  <div class="absolute right-2 <%= show_header ? 'top-4' : 'top-0.5' %> opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+    <div class="flex items-center gap-1 bg-white rounded-md shadow-sm border border-slate-200 p-1">
+      <!-- Emoji -->
+      <button class="p-1.5 hover:bg-slate-100 rounded transition-colors relative"
+              onclick="showEmojiPicker(event, '<%= message.id %>')"
+              title="이모지">
+        😊
+      </button>
+      
+      <!-- Reply -->
+      <button class="p-1.5 hover:bg-slate-100 rounded transition-colors"
+              onclick="replyToMessage('<%= message.id %>', '<%= message.user.name %>')"
+              title="답글">
+        💬
+      </button>
+      
+      <!-- Edit (only for message owner) -->
+      <% if message.user == current_user %>
+        <button class="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                onclick="editMessage('<%= message.id %>')"
+                title="수정">
+          ✏️
+        </button>
+      <% end %>
+      
+      <!-- Copy -->
+      <button class="p-1.5 hover:bg-slate-100 rounded transition-colors"
+              onclick="copyMessage('<%= message.id %>')"
+              title="복사">
+        📋
+      </button>
+      
+      <!-- Pin -->
+      <button class="p-1.5 hover:bg-slate-100 rounded transition-colors <%= 'text-amber-600' if message.is_pinned? %>"
+              onclick="togglePinMessage('<%= message.id %>')"
+              title="<%= message.is_pinned? ? '고정 해제' : '고정' %>">
+        📌
+      </button>
+      
+      <!-- More -->
+      <button class="p-1.5 hover:bg-slate-100 rounded transition-colors"
+              onclick="showMoreMenu(event, '<%= message.id %>')"
+              title="더보기">
+        ⋯
+      </button>
+    </div>
+  </div>
+<% if message.is_shared? %>
+      </div>
+    </div>
+  </div>
+<% else %>
+</div>
+<% end %>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>관리자 - <%= content_for(:title) || "WorkSpace Admin" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="bg-slate-50">
+    <div class="flex h-screen">
+      <!-- Admin Sidebar -->
+      <div class="w-64 bg-slate-900 text-white">
+        <div class="flex flex-col h-full">
+          <!-- Logo -->
+          <div class="flex items-center h-16 px-6 border-b border-slate-800">
+            <%= link_to admin_root_path, class: "flex items-center space-x-3" do %>
+              <div class="w-8 h-8 bg-gradient-to-br from-[#FF6D75] to-[#E85560] rounded-lg flex items-center justify-center">
+                <span class="text-white font-bold text-sm">A</span>
+              </div>
+              <h1 class="text-lg font-semibold">관리자</h1>
+            <% end %>
+          </div>
+
+          <!-- Admin Navigation -->
+          <nav class="flex-1 px-3 py-4 space-y-1">
+            <%= link_to admin_root_path, class: "flex items-center px-3 py-2 text-sm font-medium #{controller_name == 'dashboard' ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'} rounded-md transition-colors" do %>
+              <%= icon "dashboard", class: "w-5 h-5 mr-3" %>
+              대시보드
+            <% end %>
+            
+            <%= link_to admin_users_path, class: "flex items-center px-3 py-2 text-sm font-medium #{controller_name == 'users' ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'} rounded-md transition-colors" do %>
+              <%= icon "users", class: "w-5 h-5 mr-3" %>
+              사용자 관리
+            <% end %>
+            
+            <%= link_to admin_workspaces_path, class: "flex items-center px-3 py-2 text-sm font-medium #{controller_name == 'workspaces' ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'} rounded-md transition-colors" do %>
+              <%= icon "building-2", class: "w-5 h-5 mr-3" %>
+              워크스페이스
+            <% end %>
+            
+            <%= link_to admin_notes_path, class: "flex items-center px-3 py-2 text-sm font-medium #{controller_name == 'notes' ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'} rounded-md transition-colors" do %>
+              <%= icon "file-text", class: "w-5 h-5 mr-3" %>
+              노트 관리
+            <% end %>
+          </nav>
+
+          <!-- Admin User Info -->
+          <div class="px-3 py-3 border-t border-slate-800">
+            <div class="flex items-center p-2">
+              <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-gradient-to-br from-[#FF6D75] to-[#E85560] rounded-full flex items-center justify-center">
+                  <span class="text-white text-xs font-medium">
+                    <%= current_user.name.present? ? current_user.name.first.upcase : current_user.email.first.upcase %>
+                  </span>
+                </div>
+              </div>
+              <div class="ml-3 flex-1">
+                <p class="text-sm font-medium text-white truncate">
+                  <%= current_user.name.present? ? current_user.name : current_user.email %>
+                </p>
+                <p class="text-xs text-slate-400">관리자</p>
+              </div>
+              <div class="ml-auto">
+                <%= link_to root_path, class: "text-slate-400 hover:text-white" do %>
+                  <%= icon "arrow-left", class: "w-5 h-5" %>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Header -->
+        <header class="bg-white border-b border-slate-200">
+          <div class="px-6 py-4">
+            <div class="flex items-center justify-between">
+              <h1 class="text-xl font-semibold text-slate-900">
+                <%= content_for(:page_title) || "대시보드" %>
+              </h1>
+            </div>
+          </div>
+        </header>
+
+        <!-- Content -->
+        <main class="flex-1 overflow-y-auto">
+          <div class="p-6">
+            <!-- Flash Messages -->
+            <% if notice.present? %>
+              <div class="mb-4 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-md flex items-center">
+                <%= icon "check-circle", class: "w-5 h-5 mr-2 flex-shrink-0" %>
+                <p class="text-sm"><%= notice %></p>
+              </div>
+            <% end %>
+            
+            <% if alert.present? %>
+              <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-md flex items-center">
+                <%= icon "alert-circle", class: "w-5 h-5 mr-2 flex-shrink-0" %>
+                <p class="text-sm"><%= alert %></p>
+              </div>
+            <% end %>
+            
+            <%= yield %>
+          </div>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

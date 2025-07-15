@@ -1,0 +1,164 @@
+<% content_for :page_title, "멤버 관리" %>
+
+<div class="max-w-6xl mx-auto px-4 py-8">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-slate-900">워크스페이스 멤버 관리</h1>
+    <p class="text-slate-600 mt-1"><%= @workspace.name %> 워크스페이스의 멤버를 관리합니다.</p>
+  </div>
+
+  <!-- Add Member Form -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6 mb-6">
+    <h2 class="text-lg font-semibold text-slate-900 mb-4">새 멤버 추가</h2>
+    
+    <%= form_with url: workspace_members_path, local: true, class: "flex items-end gap-4" do |form| %>
+      <div class="flex-1">
+        <label for="email" class="block text-sm font-medium text-slate-700 mb-1">이메일 주소</label>
+        <%= text_field_tag :email, nil, 
+            placeholder: "user@example.com",
+            class: "w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75]",
+            required: true %>
+        <p class="text-xs text-slate-500 mt-1">가입된 사용자의 이메일을 입력하세요.</p>
+      </div>
+      
+      <%= submit_tag "멤버 추가", 
+          class: "px-4 py-2 bg-[#FF6D75] text-white rounded-md text-sm font-medium hover:bg-[#FF5561] focus:outline-none focus:ring-2 focus:ring-[#FF6D75] cursor-pointer" %>
+    <% end %>
+  </div>
+
+  <!-- Members List -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+    <div class="px-6 py-4 border-b border-slate-200">
+      <h2 class="text-lg font-semibold text-slate-900">멤버 목록 (<%= @members.count %>명)</h2>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+              사용자
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+              이메일
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+              권한
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+              가입일
+            </th>
+            <th class="relative px-6 py-3">
+              <span class="sr-only">작업</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-slate-200">
+          <% @members.each do |member| %>
+            <tr class="hover:bg-slate-50">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0 h-10 w-10">
+                    <div class="h-10 w-10 rounded-full bg-[#FF6D75] flex items-center justify-center">
+                      <span class="text-white font-medium">
+                        <%= member.user.name.first.upcase %>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="ml-4">
+                    <div class="text-sm font-medium text-slate-900">
+                      <%= member.user.name %>
+                      <% if member.user == current_user %>
+                        <span class="text-xs text-slate-500">(나)</span>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-slate-900"><%= member.user.email %></div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <% if member.admin? %>
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                    관리자
+                  </span>
+                <% else %>
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-800">
+                    멤버
+                  </span>
+                <% end %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                <%= member.joined_at.strftime("%Y-%m-%d") %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <div class="flex items-center justify-end gap-2">
+                  <% if member.user != current_user %>
+                    <% if member.member? %>
+                      <%= button_to workspace_member_path(member), method: :patch, params: { role: 'admin' }, class: "text-purple-600 hover:text-purple-900", data: { turbo_confirm: "관리자 권한을 부여하시겠습니까?" } do %>
+                        <%= icon "shield-check", class: "w-4 h-4" %>
+                      <% end %>
+                    <% else %>
+                      <%= button_to workspace_member_path(member), method: :patch, params: { role: 'member' }, class: "text-slate-600 hover:text-slate-900", data: { turbo_confirm: "관리자 권한을 제거하시겠습니까?" } do %>
+                        <%= icon "shield-off", class: "w-4 h-4" %>
+                      <% end %>
+                    <% end %>
+                    
+                    <%= button_to workspace_member_path(member), method: :delete, class: "text-red-600 hover:text-red-900", data: { turbo_confirm: "정말로 이 멤버를 제거하시겠습니까?" } do %>
+                      <%= icon "trash", class: "w-4 h-4" %>
+                    <% end %>
+                  <% end %>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+            <%= icon "shield", class: "w-5 h-5 text-purple-600" %>
+          </div>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-slate-600">관리자</p>
+          <p class="text-2xl font-semibold text-slate-900"><%= @members.select(&:admin?).count %>명</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
+            <%= icon "users", class: "w-5 h-5 text-slate-600" %>
+          </div>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-slate-600">일반 멤버</p>
+          <p class="text-2xl font-semibold text-slate-900"><%= @members.select(&:member?).count %>명</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div class="w-10 h-10 bg-[#FFF0F1] rounded-lg flex items-center justify-center">
+            <%= icon "users-group", class: "w-5 h-5 text-[#FF6D75]" %>
+          </div>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-slate-600">전체 멤버</p>
+          <p class="text-2xl font-semibold text-slate-900"><%= @members.count %>명</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

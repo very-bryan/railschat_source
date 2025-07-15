@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "WorkSpace SaaS" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
+    <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+    
+    <!-- Preconnect to speed up image loading -->
+    <link rel="preconnect" href="<%= root_url %>">
+    <link rel="dns-prefetch" href="<%= root_url %>">
+
+    <%# Includes all stylesheet files in app/assets/stylesheets %>
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    
+    <!-- Initialize dark mode immediately to prevent flash -->
+    <script>
+      (function() {
+        const theme = localStorage.getItem('theme') || 'light';
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
+    
+    <style>
+      .mention {
+        background-color: rgba(147, 51, 234, 0.1);
+        color: #9333EA;
+        padding: 0 4px;
+        border-radius: 4px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      .mention:hover {
+        background-color: rgba(147, 51, 234, 0.2);
+      }
+    </style>
+    
+    
+    <%= javascript_importmap_tags %>
+    
+    <% if user_signed_in? %>
+      <script>
+        window.currentUserId = <%= current_user.id %>;
+      </script>
+    <% end %>
+  </head>
+
+  <body class="bg-slate-50">
+    <% if user_signed_in? %>
+      <div class="flex h-screen bg-slate-50">
+        <!-- Sidebar -->
+        <div id="sidebar" class="sidebar-expanded bg-white border-r border-slate-200 transition-all duration-300">
+          <div class="flex flex-col h-full">
+            <!-- Logo -->
+            <div class="flex items-center justify-between h-16 border-b border-slate-200 sidebar-header">
+              <%= link_to root_path, class: "flex items-center hover:opacity-80 transition-opacity sidebar-logo" do %>
+                <% if current_user&.current_workspace&.icon&.attached? %>
+                  <%= image_tag current_user.current_workspace.icon, class: "w-8 h-8 rounded-lg object-cover" %>
+                <% else %>
+                  <div class="w-8 h-8 bg-gradient-to-br from-[#FF6D75] to-[#E85560] rounded-lg flex items-center justify-center">
+                    <span class="text-white font-bold text-sm">
+                      <%= current_user&.current_workspace&.name&.first&.upcase || 'W' %>
+                    </span>
+                  </div>
+                <% end %>
+                <h1 class="text-xl font-semibold text-slate-900 sidebar-text">
+                  <%= current_user&.current_workspace&.name || 'WorkSpace' %>
+                </h1>
+              <% end %>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 sidebar-nav space-y-1">
+              <!-- Dashboard -->
+              <a href="<%= root_path %>" class="sidebar-item flex items-center text-sm font-medium text-slate-700 rounded-md hover:bg-slate-100 hover:text-slate-900 transition-colors" data-tooltip="대시보드">
+                <%= icon "home", library: "tabler", class: "sidebar-icon w-5 h-5 text-slate-500" %>
+                <span class="sidebar-text">대시보드</span>
+              </a>
+              
+              <!-- Notes -->
+              <a href="<%= notes_path %>" class="sidebar-item flex items-center text-sm font-medium text-slate-700 rounded-md hover:bg-slate-100 hover:text-slate-900 transition-colors" data-tooltip="노트">
+                <%= icon "file-text", library: "tabler", class: "sidebar-icon w-5 h-5 text-slate-500" %>
+                <span class="sidebar-text">노트</span>
+              </a>
+              
+              <!-- Kanban -->
+              <a href="<%= kanban_path %>" class="sidebar-item flex items-center text-sm font-medium text-slate-700 rounded-md hover:bg-slate-100 hover:text-slate-900 transition-colors" data-tooltip="칸반">
+                <%= icon "layout-kanban", library: "tabler", class: "sidebar-icon w-5 h-5 text-slate-500" %>
+                <span class="sidebar-text">칸반</span>
+              </a>
+              
+              <!-- Calendar -->
+              <a href="<%= calendar_path %>" class="sidebar-item flex items-center text-sm font-medium text-slate-700 rounded-md hover:bg-slate-100 hover:text-slate-900 transition-colors" data-tooltip="캘린더">
+                <%= icon "calendar", library: "tabler", class: "sidebar-icon w-5 h-5 text-slate-500" %>
+                <span class="sidebar-text">캘린더</span>
+              </a>
+              
+              <!-- Chat -->
+              <a href="<%= chat_path %>" class="sidebar-item flex items-center text-sm font-medium text-slate-700 rounded-md hover:bg-slate-100 hover:text-slate-900 transition-colors" data-tooltip="채팅">
+                <%= icon "message-circle", library: "tabler", class: "sidebar-icon w-5 h-5 text-slate-500" %>
+                <span class="sidebar-text">채팅</span>
+              </a>
+              
+              
+              <!-- Reports -->
+              <a href="<%= reports_path %>" class="sidebar-item flex items-center text-sm font-medium text-slate-700 rounded-md hover:bg-slate-100 hover:text-slate-900 transition-colors" data-tooltip="보고서">
+                <%= icon "chart-bar", library: "tabler", class: "sidebar-icon w-5 h-5 text-slate-500" %>
+                <span class="sidebar-text">보고서</span>
+              </a>
+              
+              <!-- Settings - Only visible to workspace admins -->
+              <% if current_user.workspace_admin? %>
+                <a href="<%= settings_path %>" class="sidebar-item flex items-center text-sm font-medium text-slate-700 rounded-md hover:bg-slate-100 hover:text-slate-900 transition-colors" data-tooltip="설정">
+                  <%= icon "settings", library: "tabler", class: "sidebar-icon w-5 h-5 text-slate-500" %>
+                  <span class="sidebar-text">설정</span>
+                </a>
+              <% end %>
+            </nav>
+
+            
+            <!-- Favorite Channels -->
+            <div id="favorite_channels">
+              <% if user_signed_in? %>
+                <% favorite_channels = current_user.favorite_channels
+                                                      .where(workspace: current_user.current_workspace)
+                                                      .left_joins(:channel_members)
+                                                      .group('channels.id')
+                                                      .order('COUNT(channel_members.id) DESC') %>
+                <%= render partial: "layouts/favorite_channels", locals: { favorite_channels: favorite_channels } %>
+              <% end %>
+            </div>
+
+            <!-- Sample Data Delete Button -->
+            <% if Note.where(workspace: current_user.current_workspace, is_sample: true).exists? %>
+              <div class="sidebar-section border-t border-slate-200">
+                <%= button_to sample_data_path, method: :delete, 
+                    data: { turbo_confirm: '샘플 데이터를 삭제하시겠습니까?' },
+                    class: "sidebar-item w-full flex items-center gap-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors" do %>
+                  <%= icon "trash", library: "tabler", class: "sidebar-icon w-4 h-4" %>
+                  <span class="sidebar-text">샘플 데이터 삭제</span>
+                <% end %>
+              </div>
+            <% end %>
+            
+            <!-- User Profile -->
+            <div class="sidebar-user border-t border-slate-200">
+              <%= link_to profile_path, class: "sidebar-user-link w-full flex items-center rounded-md hover:bg-slate-50 transition-colors" do %>
+                <div class="sidebar-user-avatar flex-shrink-0">
+                  <% if current_user.avatar_url.present? %>
+                    <%= image_tag current_user.avatar_url, alt: current_user.name, class: "w-8 h-8 rounded-full" %>
+                  <% else %>
+                    <div class="w-8 h-8 bg-gradient-to-br from-[#FF6D75] to-[#E85560] rounded-full flex items-center justify-center">
+                      <span class="text-white text-xs font-medium"><%= current_user.name.present? ? current_user.name.first.upcase : current_user.email.first.upcase %></span>
+                    </div>
+                  <% end %>
+                </div>
+                <div class="sidebar-user-info flex-1 text-left">
+                  <p class="sidebar-text text-sm font-medium text-slate-900 truncate">
+                    <%= current_user.name.present? ? current_user.name : current_user.email %>
+                  </p>
+                  <p class="sidebar-text text-xs text-slate-500"><%= current_user.role || "사용자" %></p>
+                </div>
+                <div class="sidebar-user-chevron ml-auto">
+                  <%= icon "chevron-right", library: "tabler", class: "w-4 h-4 text-slate-400" %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+          <!-- Header -->
+          <header class="bg-white">
+            <div class="h-16 flex items-center border-b border-slate-200">
+              <button onclick="toggleSidebar()" class="sidebar-toggle-main p-2 hover:bg-slate-100 transition-colors -ml-2">
+                <%= icon "chevron-left", library: "tabler", class: "w-5 h-5 text-slate-600 sidebar-chevron-left" %>
+                <%= icon "chevron-right", library: "tabler", class: "w-5 h-5 text-slate-600 sidebar-chevron-right hidden" %>
+              </button>
+              <div class="flex items-center justify-between w-full px-4">
+                <div>
+                  <h1 class="text-xl font-semibold text-slate-900">
+                    <%= content_for(:page_title) || "대시보드" %>
+                  </h1>
+                </div>
+                <div class="flex items-center space-x-3">
+                  <!-- Global Search -->
+                  <% if user_signed_in? %>
+                    <%= form_with url: search_path, method: :get, local: true, class: "relative" do |form| %>
+                      <div class="relative">
+                        <%= form.text_field :q, 
+                            placeholder: "검색...", 
+                            value: params[:q],
+                            class: "pl-10 pr-4 py-2 w-64 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75] bg-white placeholder-slate-400" %>
+                        <%= icon "search", class: "absolute left-3 top-2.5 w-4 h-4 text-slate-400" %>
+                      </div>
+                    <% end %>
+                  <% end %>
+                  
+                  <!-- Notification Bell -->
+                  <% if user_signed_in? %>
+                    <% unread_count = current_user.unread_notifications_count %>
+                    <%= link_to notifications_path, class: "relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors" do %>
+                      <%= icon "bell", library: "tabler", class: "w-5 h-5" %>
+                      <% if unread_count > 0 %>
+                        <span class="absolute top-0 right-0 -mt-1 -mr-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-[#FF6D75] rounded-full">
+                          <%= unread_count > 99 ? '99+' : unread_count %>
+                        </span>
+                      <% end %>
+                    <% end %>
+                  <% end %>
+                  
+                  <!-- Search for Kanban and Calendar pages -->
+                  <% if controller_name == 'kanban' || controller_name == 'calendar' %>
+                    <%= form_with url: request.path, method: :get, local: true, class: "flex items-center" do |form| %>
+                      <div class="relative">
+                        <%= form.text_field :search, placeholder: "노트 검색...", value: params[:search], 
+                                           class: "pl-10 pr-4 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75] w-64 bg-white" %>
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <%= icon "search", library: "tabler", class: "w-4 h-4 text-slate-400" %>
+                        </div>
+                      </div>
+                      <%= form.hidden_field :date, value: params[:date] if controller_name == 'calendar' && params[:date].present? %>
+                    <% end %>
+                  <% end %>
+                  <!-- Dark Mode Toggle -->
+                  <button onclick="toggleDarkMode()" class="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors">
+                    <span id="theme-icon-sun" style="display: block;">
+                      <%= icon "sun", library: "tabler", class: "w-5 h-5" %>
+                    </span>
+                    <span id="theme-icon-moon" style="display: none;">
+                      <%= icon "moon", library: "tabler", class: "w-5 h-5" %>
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <!-- Page Content -->
+          <main class="flex-1 overflow-y-auto bg-slate-50 p-4">
+            <% if notice %>
+              <div class="mb-4 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-md flex items-center">
+                <%= icon "circle-check", library: "tabler", class: "w-5 h-5 mr-2 flex-shrink-0" %>
+                <%= notice %>
+              </div>
+            <% end %>
+            
+            <% if alert %>
+              <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-md flex items-center">
+                <%= icon "alert-circle", library: "tabler", class: "w-5 h-5 mr-2 flex-shrink-0" %>
+                <%= alert %>
+              </div>
+            <% end %>
+            
+            <%= yield %>
+          </main>
+        </div>
+      </div>
+    <% else %>
+      <!-- Authentication Layout -->
+      <% if controller_name == 'workspaces' && action_name == 'new' %>
+        <!-- Workspace Creation Page - No header -->
+        <%= yield %>
+      <% else %>
+        <!-- Other Authentication Pages -->
+        <div class="min-h-screen bg-slate-50 flex flex-col justify-center py-4 sm:px-6 lg:px-8">
+          <div class="sm:mx-auto sm:w-full sm:max-w-md">
+            <div class="text-center">
+              <div class="w-12 h-12 bg-gradient-to-br from-[#FF6D75] to-[#E85560] rounded-xl flex items-center justify-center mx-auto mb-2">
+                <span class="text-white font-bold text-lg">W</span>
+              </div>
+              <h1 class="text-xl font-bold text-slate-900">WorkSpace</h1>
+              <p class="mt-0.5 text-xs text-slate-600">전표식 노트 & 실시간 채팅 협업 시스템</p>
+            </div>
+          </div>
+          
+          <div class="mt-4 sm:mx-auto sm:w-full sm:max-w-md">
+            <div class="bg-white py-5 px-5 shadow-sm rounded-lg border border-slate-200">
+              <% if notice.present? %>
+                <div class="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg">
+                  <%= notice %>
+                </div>
+              <% end %>
+            
+            <% if alert.present? %>
+              <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg">
+                <%= alert %>
+              </div>
+            <% end %>
+            
+              <%= yield %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    <% end %>
+    
+    <style>
+      /* Sidebar styles */
+      .sidebar-expanded {
+        width: 16rem; /* 64 * 0.25rem = 16rem */
+      }
+      
+      .sidebar-collapsed {
+        width: 4rem; /* 16 * 0.25rem = 4rem */
+      }
+      
+      /* Sidebar toggle button */
+      .sidebar-toggle-main {
+        margin-left: 0.5rem;
+        border-radius: 0.375rem;
+      }
+      
+      .sidebar-header {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+      }
+      
+      .sidebar-collapsed .sidebar-header {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+        justify-content: center;
+      }
+      
+      .sidebar-logo {
+        gap: 0.75rem;
+      }
+      
+      .sidebar-collapsed .sidebar-logo {
+        justify-content: center;
+        gap: 0;
+        width: 100%;
+      }
+      
+      .sidebar-nav {
+        padding: 1rem 0.75rem;
+      }
+      
+      .sidebar-collapsed .sidebar-nav {
+        padding: 1rem 0.5rem;
+      }
+      
+      .sidebar-item {
+        padding: 0.5rem 0.75rem;
+        gap: 0.75rem;
+        position: relative;
+      }
+      
+      .sidebar-collapsed .sidebar-item {
+        padding: 0.5rem;
+        justify-content: center;
+        width: 100%;
+      }
+      
+      .sidebar-icon {
+        margin-right: 0.75rem;
+      }
+      
+      .sidebar-collapsed .sidebar-icon {
+        margin-right: 0;
+      }
+      
+      .sidebar-text {
+        display: block;
+      }
+      
+      .sidebar-collapsed .sidebar-text {
+        display: none;
+      }
+      
+      /* Hide chevron icons based on state */
+      .sidebar-expanded .sidebar-chevron-right {
+        display: none;
+      }
+      
+      .sidebar-expanded .sidebar-chevron-left {
+        display: block;
+      }
+      
+      .sidebar-collapsed .sidebar-chevron-right {
+        display: block;
+      }
+      
+      .sidebar-collapsed .sidebar-chevron-left {
+        display: none;
+      }
+      
+      /* Favorite channels section */
+      .sidebar-section {
+        padding: 0.75rem;
+      }
+      
+      .sidebar-collapsed .sidebar-section {
+        padding: 0.5rem;
+      }
+      
+      .sidebar-section-header {
+        margin-bottom: 0.5rem;
+      }
+      
+      .sidebar-collapsed .sidebar-section-header {
+        display: none;
+      }
+      
+      .sidebar-channel-item {
+        padding: 0.375rem 0.5rem;
+      }
+      
+      .sidebar-collapsed .sidebar-channel-item {
+        padding: 0.375rem;
+        justify-content: center;
+      }
+      
+      .sidebar-channel-icon {
+        flex-shrink: 0;
+      }
+      
+      .sidebar-collapsed .sidebar-channel-lock {
+        display: none;
+      }
+      
+      /* User profile section */
+      .sidebar-user {
+        padding: 0.75rem;
+      }
+      
+      .sidebar-collapsed .sidebar-user {
+        padding: 0.5rem;
+      }
+      
+      .sidebar-user-link {
+        padding: 0.5rem;
+      }
+      
+      .sidebar-collapsed .sidebar-user-link {
+        justify-content: center;
+        padding: 0.375rem;
+        width: 100%;
+      }
+      
+      .sidebar-collapsed .sidebar-user-avatar {
+        margin: 0 auto;
+      }
+      
+      .sidebar-user-info,
+      .sidebar-user-chevron {
+        margin-left: 0.75rem;
+      }
+      
+      .sidebar-collapsed .sidebar-user-info,
+      .sidebar-collapsed .sidebar-user-chevron {
+        display: none;
+      }
+      
+      /* Tooltip styles for collapsed sidebar */
+      .sidebar-collapsed .sidebar-item[data-tooltip],
+      .sidebar-collapsed .sidebar-channel-item {
+        position: relative;
+      }
+      
+      .sidebar-collapsed .sidebar-item[data-tooltip]:hover::after,
+      .sidebar-collapsed .sidebar-channel-item:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        left: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+        margin-left: 0.5rem;
+        padding: 0.25rem 0.5rem;
+        background-color: #1e293b;
+        color: white;
+        font-size: 0.75rem;
+        border-radius: 0.25rem;
+        white-space: nowrap;
+        z-index: 10;
+      }
+      
+      .sidebar-collapsed .sidebar-channel-item:hover::after {
+        content: attr(data-tooltip);
+      }
+    </style>
+    
+    <script>
+      function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const isCollapsed = sidebar.classList.contains('sidebar-collapsed');
+        const chevronLeft = document.querySelector('.sidebar-chevron-left');
+        const chevronRight = document.querySelector('.sidebar-chevron-right');
+        
+        if (isCollapsed) {
+          sidebar.classList.remove('sidebar-collapsed');
+          sidebar.classList.add('sidebar-expanded');
+          chevronLeft.classList.remove('hidden');
+          chevronRight.classList.add('hidden');
+          localStorage.setItem('sidebarCollapsed', 'false');
+        } else {
+          sidebar.classList.remove('sidebar-expanded');
+          sidebar.classList.add('sidebar-collapsed');
+          chevronLeft.classList.add('hidden');
+          chevronRight.classList.remove('hidden');
+          localStorage.setItem('sidebarCollapsed', 'true');
+        }
+      }
+      
+      // Initialize sidebar state from localStorage
+      document.addEventListener('DOMContentLoaded', function() {
+        const sidebar = document.getElementById('sidebar');
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        const chevronLeft = document.querySelector('.sidebar-chevron-left');
+        const chevronRight = document.querySelector('.sidebar-chevron-right');
+        
+        if (isCollapsed) {
+          sidebar.classList.remove('sidebar-expanded');
+          sidebar.classList.add('sidebar-collapsed');
+          if (chevronLeft) chevronLeft.classList.add('hidden');
+          if (chevronRight) chevronRight.classList.remove('hidden');
+        }
+        
+        // Add tooltips to favorite channels
+        const favoriteChannels = document.querySelectorAll('.sidebar-channel-item');
+        favoriteChannels.forEach(channel => {
+          const channelName = channel.querySelector('.sidebar-text.truncate')?.textContent;
+          if (channelName) {
+            channel.setAttribute('data-tooltip', channelName);
+          }
+        });
+      });
+      
+      // Toggle favorite channels
+      function toggleFavoriteChannels() {
+        const list = document.getElementById('favorite-channels-list');
+        const chevron = document.getElementById('favorite-channels-chevron');
+        
+        if (list && chevron) {
+          if (list.style.display === 'none') {
+            list.style.display = '';
+            chevron.style.transform = 'rotate(0deg)';
+          } else {
+            list.style.display = 'none';
+            chevron.style.transform = 'rotate(180deg)';
+          }
+          
+          // Save state to localStorage
+          localStorage.setItem('favoriteChannelsCollapsed', list.style.display === 'none');
+        }
+      }
+      
+      // Restore favorite channels state on page load
+      document.addEventListener('DOMContentLoaded', function() {
+        const isCollapsed = localStorage.getItem('favoriteChannelsCollapsed') === 'true';
+        if (isCollapsed) {
+          const list = document.getElementById('favorite-channels-list');
+          const chevron = document.getElementById('favorite-channels-chevron');
+          if (list && chevron) {
+            list.style.display = 'none';
+            chevron.style.transform = 'rotate(180deg)';
+          }
+        }
+      });
+    </script>
+  </body>
+</html>

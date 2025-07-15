@@ -1,0 +1,71 @@
+<% if @message.parent_message_id.present? %>
+  <% parent_id = @message.thread_root_id || @message.parent_message_id %>
+  <% parent_message = Message.find(parent_id) %>
+  <% is_first_reply = parent_message.thread_messages.count == 1 %>
+  
+  <% if is_first_reply %>
+    <%# Replace the entire message wrapper for first reply %>
+    <%= turbo_stream.replace "message-wrapper-#{parent_id}" do %>
+      <div id="message-wrapper-<%= parent_id %>">
+        <%= render 'messages/message_grouped', message: parent_message, previous_message: nil %>
+        <div id="thread-replies-<%= parent_id %>" class="thread-replies">
+          <div class="ml-12">
+            <%= render 'messages/message_grouped', message: @message, previous_message: nil %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  <% else %>
+    <%# Append to existing thread container %>
+    <%= turbo_stream.append "thread-replies-#{parent_id}" do %>
+      <div class="ml-12">
+        <%= render 'messages/message_grouped', message: @message, previous_message: nil %>
+      </div>
+    <% end %>
+    
+    <%# Update thread count %>
+    <%= turbo_stream.update "thread-count-#{parent_id}" do %>
+      답글 <%= parent_message.thread_messages.count %>개
+    <% end %>
+  <% end %>
+<% else %>
+  <%# New message (not a reply) %>
+  <% # Get the last message to determine if we should group %>
+  <% last_message = @channel.messages.where(thread_root_id: nil).where.not(id: @message.id).order(:created_at).last %>
+  
+  <%= turbo_stream.append "messages-list" do %>
+    <div id="message-wrapper-<%= @message.id %>">
+      <%= render 'messages/message_grouped', message: @message, previous_message: last_message %>
+      <div id="thread-replies-<%= @message.id %>" class="thread-replies">
+        <!-- Empty thread container for future replies -->
+      </div>
+    </div>
+  <% end %>
+  
+  <%= turbo_stream.remove "empty-messages" %>
+<% end %>
+
+<%# Scroll to the new message %>
+<%= turbo_stream.append "messages-list" do %>
+  <script>
+    const messagesContainer = document.getElementById('messagesContainer');
+    if (messagesContainer) {
+      <% if @message.parent_message_id.present? %>
+        // For replies, scroll to show the thread area
+        const parentWrapper = document.getElementById('message-wrapper-<%= parent_id %>');
+        if (parentWrapper) {
+          const threadContainer = document.getElementById('thread-replies-<%= parent_id %>');
+          if (threadContainer) {
+            const containerHeight = messagesContainer.offsetHeight;
+            const threadBottom = threadContainer.offsetTop + threadContainer.offsetHeight;
+            const scrollTo = Math.max(0, threadBottom - containerHeight + 100);
+            messagesContainer.scrollTop = scrollTo;
+          }
+        }
+      <% else %>
+        // For new messages, scroll to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      <% end %>
+    }
+  </script>
+<% end %>

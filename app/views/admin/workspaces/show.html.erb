@@ -1,0 +1,128 @@
+<% content_for(:page_title, @workspace.name) %>
+
+<div class="max-w-7xl mx-auto">
+  <div class="mb-8">
+    <%= link_to admin_workspaces_path, class: "inline-flex items-center text-sm text-slate-600 hover:text-slate-900" do %>
+      <%= icon "arrow-left", class: "w-4 h-4 mr-1" %>
+      워크스페이스 목록으로 돌아가기
+    <% end %>
+  </div>
+
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6 mb-6">
+    <div class="flex items-start justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900">
+          <%= @workspace.name %>
+        </h1>
+        <% if @workspace.description.present? %>
+          <p class="text-slate-600 mt-1"><%= @workspace.description %></p>
+        <% end %>
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <%= link_to edit_admin_workspace_path(@workspace), class: "inline-flex items-center px-3 py-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 bg-white hover:bg-slate-50" do %>
+          <%= icon "pencil", class: "w-4 h-4 mr-2" %>
+          편집
+        <% end %>
+        
+        <%= button_to admin_workspace_path(@workspace), method: :delete, class: "inline-flex items-center px-3 py-2 border border-red-300 rounded-md text-sm font-medium text-red-700 bg-white hover:bg-red-50", data: { turbo_confirm: "정말로 이 워크스페이스를 삭제하시겠습니까? 모든 노트와 멤버십도 함께 삭제됩니다." } do %>
+          <%= icon "trash", class: "w-4 h-4 mr-2" %>
+          삭제
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-1">
+      <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+        <h2 class="text-lg font-semibold text-slate-900 mb-4">워크스페이스 정보</h2>
+        
+        <dl class="space-y-3">
+          <div>
+            <dt class="text-sm font-medium text-slate-500">생성일</dt>
+            <dd class="mt-1 text-sm text-slate-900">
+              <%= @workspace.created_at.strftime("%Y년 %m월 %d일") %>
+            </dd>
+          </div>
+          
+          <div>
+            <dt class="text-sm font-medium text-slate-500">멤버 수</dt>
+            <dd class="mt-1 text-sm text-slate-900">
+              <%= @workspace.users.count %>명
+            </dd>
+          </div>
+          
+          <div>
+            <dt class="text-sm font-medium text-slate-500">노트 수</dt>
+            <dd class="mt-1 text-sm text-slate-900">
+              <%= @workspace.notes.count %>개
+            </dd>
+          </div>
+        </dl>
+      </div>
+      
+      <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6 mt-6">
+        <h2 class="text-lg font-semibold text-slate-900 mb-4">멤버</h2>
+        
+        <% if @members.any? %>
+          <ul class="space-y-2">
+            <% @members.each do |member| %>
+              <li class="flex items-center justify-between py-2">
+                <div class="flex items-center">
+                  <div class="h-8 w-8 rounded-full bg-[#FF6D75] flex items-center justify-center mr-2">
+                    <span class="text-white text-xs font-medium">
+                      <%= member.user.name.present? ? member.user.name.first.upcase : member.user.email.first.upcase %>
+                    </span>
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium text-slate-900">
+                      <%= member.user.name || member.user.email %>
+                    </p>
+                    <p class="text-xs text-slate-500">
+                      <%= member.role %>
+                    </p>
+                  </div>
+                </div>
+                <%= link_to admin_user_path(member.user), class: "text-[#FF6D75] hover:text-[#FF5561]" do %>
+                  <%= icon "external-link", class: "w-4 h-4" %>
+                <% end %>
+              </li>
+            <% end %>
+          </ul>
+        <% else %>
+          <p class="text-sm text-slate-500">멤버가 없습니다.</p>
+        <% end %>
+      </div>
+    </div>
+    
+    <div class="lg:col-span-2">
+      <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+        <h2 class="text-lg font-semibold text-slate-900 mb-4">최근 노트</h2>
+        
+        <% if @notes.any? %>
+          <div class="space-y-4">
+            <% @notes.each do |note| %>
+              <div class="border-b border-slate-200 pb-4 last:border-0">
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <p class="text-sm text-slate-900 line-clamp-2">
+                      <%= note.content %>
+                    </p>
+                    <div class="mt-1 flex items-center text-xs text-slate-500">
+                      <span><%= note.user&.name || note.user&.email || "익명" %></span>
+                      <span class="mx-2">•</span>
+                      <span><%= note.created_at.strftime("%Y-%m-%d %H:%M") %></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="text-sm text-slate-500">노트가 없습니다.</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

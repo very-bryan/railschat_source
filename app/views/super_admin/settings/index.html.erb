@@ -1,0 +1,167 @@
+<% content_for :page_title, "시스템 설정" %>
+
+<div class="space-y-6">
+  <!-- General Settings -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+    <div class="px-6 py-4 border-b border-slate-200">
+      <h3 class="text-lg font-semibold text-slate-900">일반 설정</h3>
+    </div>
+    <div class="p-6 space-y-4">
+      <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+        <div>
+          <p class="text-sm font-medium text-slate-900">신규 가입 허용</p>
+          <p class="text-xs text-slate-500 mt-1">새로운 사용자의 회원가입을 허용합니다</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" class="sr-only peer" <%= 'checked' if @settings[:allow_new_signups] %>>
+          <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+        </label>
+      </div>
+      
+      <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+        <div>
+          <p class="text-sm font-medium text-slate-900">이메일 인증 필수</p>
+          <p class="text-xs text-slate-500 mt-1">가입 시 이메일 인증을 요구합니다</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" class="sr-only peer" <%= 'checked' if @settings[:require_email_verification] %>>
+          <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+        </label>
+      </div>
+      
+      <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+        <div>
+          <p class="text-sm font-medium text-slate-900">유지보수 모드</p>
+          <p class="text-xs text-slate-500 mt-1">일반 사용자의 접근을 차단합니다</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" class="sr-only peer" <%= 'checked' if @settings[:maintenance_mode] %>>
+          <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Workspace Limits -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+    <div class="px-6 py-4 border-b border-slate-200">
+      <h3 class="text-lg font-semibold text-slate-900">워크스페이스 제한</h3>
+    </div>
+    <div class="p-6 space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">사용자당 최대 워크스페이스</label>
+          <input type="number" 
+                 value="<%= @settings[:max_workspaces_per_user] %>"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent">
+          <p class="text-xs text-slate-500 mt-1">각 사용자가 생성할 수 있는 최대 워크스페이스 수</p>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">워크스페이스당 최대 스토리지 (MB)</label>
+          <input type="number" 
+                 value="<%= @settings[:max_storage_per_workspace_mb] %>"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent">
+          <p class="text-xs text-slate-500 mt-1">각 워크스페이스의 최대 스토리지 용량</p>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">기본 멤버 제한</label>
+          <input type="number" 
+                 value="<%= @settings[:default_workspace_member_limit] %>"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent">
+          <p class="text-xs text-slate-500 mt-1">새 워크스페이스의 기본 멤버 수 제한</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Settings -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+    <div class="px-6 py-4 border-b border-slate-200">
+      <h3 class="text-lg font-semibold text-slate-900">이메일 설정</h3>
+    </div>
+    <div class="p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">발신자 이메일</label>
+        <input type="email" 
+               value="noreply@veryworks.com"
+               class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent">
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">발신자 이름</label>
+        <input type="text" 
+               value="VeryWorks"
+               class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent">
+      </div>
+      
+      <div class="grid grid-cols-2 gap-4">
+        <label class="flex items-center p-4 bg-slate-50 rounded-lg cursor-pointer">
+          <input type="checkbox" class="w-4 h-4 text-purple-600 border-slate-300 rounded focus:ring-purple-500" checked>
+          <span class="ml-3 text-sm text-slate-900">가입 환영 이메일</span>
+        </label>
+        
+        <label class="flex items-center p-4 bg-slate-50 rounded-lg cursor-pointer">
+          <input type="checkbox" class="w-4 h-4 text-purple-600 border-slate-300 rounded focus:ring-purple-500" checked>
+          <span class="ml-3 text-sm text-slate-900">알림 이메일</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Security Settings -->
+  <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+    <div class="px-6 py-4 border-b border-slate-200">
+      <h3 class="text-lg font-semibold text-slate-900">보안 설정</h3>
+    </div>
+    <div class="p-6 space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">세션 만료 시간 (분)</label>
+          <input type="number" 
+                 value="1440"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent">
+          <p class="text-xs text-slate-500 mt-1">사용자 세션이 자동으로 만료되는 시간</p>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">최대 로그인 시도</label>
+          <input type="number" 
+                 value="5"
+                 class="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent">
+          <p class="text-xs text-slate-500 mt-1">계정이 잠기기 전 최대 로그인 시도 횟수</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+        <div>
+          <p class="text-sm font-medium text-slate-900">2단계 인증 필수</p>
+          <p class="text-xs text-slate-500 mt-1">모든 사용자에게 2단계 인증을 요구합니다</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" class="sr-only peer">
+          <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Save Button -->
+  <div class="flex justify-end">
+    <button class="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 font-medium">
+      설정 저장
+    </button>
+  </div>
+</div>
+
+<script>
+  // Note: In a real implementation, these toggles and inputs would be connected to a form
+  // that saves the settings to the database or configuration file
+  document.addEventListener('DOMContentLoaded', function() {
+    const saveButton = document.querySelector('button');
+    saveButton.addEventListener('click', function() {
+      alert('설정 저장 기능은 아직 구현되지 않았습니다.');
+    });
+  });
+</script>

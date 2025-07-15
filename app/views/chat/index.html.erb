@@ -1,0 +1,3058 @@
+<% content_for :page_title, "실시간 채팅" %>
+
+<!-- New Channel Form Modal -->
+<div id="channelForm" class="fixed inset-0 hidden z-50 flex items-center justify-center transition-opacity duration-200" style="background-color: rgba(0, 0, 0, 0.2);" onclick="if(event.target === this) toggleChannelForm()">
+  <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 transform transition-all duration-200 scale-95 opacity-0" id="channelFormContent">
+    <%= form_with model: Channel.new, url: channels_path, local: false, data: { turbo: true, turbo_frame: "_top" }, class: "", id: "new_channel_form" do |form| %>
+      <!-- Step 1: Member Selection -->
+      <div id="channelFormStep1" class="block">
+        <div class="border-b border-slate-200 px-6 py-4">
+          <h3 class="text-lg font-semibold text-slate-900">멤버 선택</h3>
+          <p class="text-sm text-slate-500 mt-1">채널에 초대할 멤버를 선택하세요</p>
+        </div>
+        
+        <div class="p-6">
+          <div class="mb-4">
+            <input type="text" 
+                   placeholder="이름으로 검색..." 
+                   class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75]"
+                   onkeyup="filterChannelMembers(this.value)">
+          </div>
+          
+          <div class="border border-slate-200 rounded-md">
+            <div class="max-h-80 overflow-y-auto p-2" id="membersList">
+              <% if @all_users && @all_users.any? %>
+                <% @all_users.each do |user| %>
+                  <label class="flex items-center p-3 hover:bg-slate-50 rounded cursor-pointer member-item" 
+                         data-name="<%= user.name.downcase %>"
+                         data-user-name="<%= user.name %>">
+                    <%= check_box_tag "channel[member_ids][]", user.id, false, 
+                        class: "h-4 w-4 text-[#FF6D75] focus:ring-[#FF6D75] border-slate-300 rounded",
+                        onchange: "updateSelectedMembers()" %>
+                    <span class="ml-3 text-sm text-slate-700"><%= user.name %></span>
+                  </label>
+                <% end %>
+              <% else %>
+                <p class="text-sm text-slate-500 text-center py-4">다른 사용자가 없습니다</p>
+              <% end %>
+            </div>
+          </div>
+          
+          <div id="selectedMembersPreview" class="mt-4 text-sm text-slate-600"></div>
+        </div>
+        
+        <div class="flex justify-end gap-2 px-6 pb-6">
+          <button type="button" 
+                  onclick="toggleChannelForm()" 
+                  class="px-4 py-2 border border-slate-200 rounded-md text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors">
+            취소
+          </button>
+          <button type="button" 
+                  onclick="goToChannelStep2()"
+                  class="px-4 py-2 bg-[#FF6D75] text-white rounded-md hover:bg-[#E85560] text-sm font-medium transition-colors">
+            다음
+          </button>
+        </div>
+      </div>
+      
+      <!-- Step 2: Channel Details -->
+      <div id="channelFormStep2" class="hidden">
+        <div class="border-b border-slate-200 px-6 py-4">
+          <h3 class="text-lg font-semibold text-slate-900">채널 정보</h3>
+          <p class="text-sm text-slate-500 mt-1">채널명과 설명을 입력하세요</p>
+        </div>
+        
+        <div class="p-6">
+          <div id="channel_form_errors"></div>
+          <div class="space-y-4">
+            <div>
+              <%= form.label :name, "채널명", class: "block text-sm font-medium text-slate-700 mb-1" %>
+              <%= form.text_field :name, 
+                  class: "block w-full px-3 py-2 border border-slate-200 rounded-md text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75]", 
+                  placeholder: "채널명을 입력하세요",
+                  required: true,
+                  id: "channel_name_field" %>
+              <p class="mt-1 text-xs text-slate-500">한글, 영문, 숫자, 쉼표, 공백 사용 가능</p>
+            </div>
+            
+            <div>
+              <%= form.label :description, "설명", class: "block text-sm font-medium text-slate-700 mb-1" %>
+              <%= form.text_area :description, 
+                  rows: 3, 
+                  class: "block w-full px-3 py-2 border border-slate-200 rounded-md text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75] resize-none", 
+                  placeholder: "채널 설명을 입력하세요 (선택사항)" %>
+            </div>
+
+            <div class="flex items-center">
+              <%= form.check_box :is_private, { checked: true, class: "h-4 w-4 text-[#FF6D75] focus:ring-[#FF6D75] border-slate-300 rounded", onchange: "togglePrivateDescription()" } %>
+              <%= form.label :is_private, class: "ml-2 flex items-center gap-2 cursor-pointer" do %>
+                <span class="text-sm text-slate-700">비공개 채널</span>
+                <span id="privateChannelDescription" class="text-xs text-slate-500">(초대된 멤버만 접근 가능)</span>
+              <% end %>
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex justify-between px-6 pb-6">
+          <button type="button" 
+                  onclick="goToChannelStep1()"
+                  class="px-4 py-2 border border-slate-200 rounded-md text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors">
+            이전
+          </button>
+          <div class="flex gap-2">
+            <button type="button" 
+                    onclick="toggleChannelForm()" 
+                    class="px-4 py-2 border border-slate-200 rounded-md text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors">
+              취소
+            </button>
+            <%= form.submit "채널 생성", 
+                class: "px-4 py-2 bg-[#FF6D75] text-white rounded-md hover:bg-[#E85560] text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                "data-disable-with": "생성 중..." %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Main Container with Chat and Channel List -->
+<div class="flex gap-4" style="height: calc(100vh - 6rem);">
+  <!-- Chat Area -->
+  <div class="flex-1 bg-white rounded-lg shadow-sm flex flex-col">
+    <% if @current_channel %>
+    <!-- Channel Header -->
+    <div class="px-4 flex items-center border-b border-slate-200 bg-white rounded-t-lg" style="height: 54px;">
+      <div class="flex items-center justify-between w-full">
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2">
+            <span class="text-slate-500">#</span>
+            <h2 class="text-lg font-semibold text-slate-900"><%= @current_channel.name %></h2>
+          </div>
+          <% if @current_channel.description.present? %>
+            <span class="text-sm text-slate-500"><%= @current_channel.description %></span>
+          <% end %>
+        </div>
+        <div class="flex items-center gap-3">
+          <% if @current_channel.is_private? %>
+            <%= icon "lock", library: "tabler", class: "w-4 h-4 text-slate-500" %>
+          <% end %>
+          <button onclick="toggleFavorite('<%= @current_channel.id %>')" 
+                  onmouseover="this.style.color='#FF6D75'"
+                  onmouseout="this.style.color=this.dataset.favorited === 'true' ? '#FF6D75' : '#94a3b8'"
+                  class="favorite-btn transition-colors"
+                  style="color: <%= @current_channel.favorited_by?(current_user) ? '#FF6D75' : '#94a3b8' %>;"
+                  data-favorited="<%= @current_channel.favorited_by?(current_user) %>">
+            <%= icon "star", library: "tabler", class: "w-4 h-4 #{'fill-current' if @current_channel.favorited_by?(current_user)}" %>
+          </button>
+          <button onclick="toggleMembersModal('<%= @current_channel.id %>')" class="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors">
+            <%= icon "users", library: "tabler", class: "w-4 h-4" %>
+            <span><%= @current_channel.users.count %></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pinned Messages Container -->
+    <div id="pinnedMessagesContainer">
+      <% if @pinned_messages.any? %>
+        <div id="pinnedMessagesBar" class="bg-yellow-50 border-b border-yellow-200 px-4 py-2 cursor-pointer" onclick="cycleThroughPinnedMessages()">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 flex-1">
+              <span class="text-yellow-700">📌</span>
+              <div class="flex-1">
+                <p class="text-sm font-medium text-yellow-800">고정된 메시지</p>
+                <p id="pinnedMessagePreview" class="text-xs text-yellow-700 truncate">
+                  <%= @pinned_messages.first.body.truncate(50) %>
+                </p>
+              </div>
+            </div>
+            <button onclick="event.stopPropagation(); showAllPinnedMessages()" class="text-xs text-yellow-700 hover:text-yellow-800">
+              모두 보기 (<%= @pinned_messages.count %>)
+            </button>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Messages Area -->
+    <div class="flex-1 overflow-y-auto p-4" id="messagesContainer" style="min-height: 0;"
+         data-controller="channel-reactions"
+         data-channel-reactions-channel-id-value="<%= @current_channel.id %>">
+      <% if @messages.any? %>
+        <div class="space-y-1" id="messages-list">
+          <% current_date = nil %>
+          <% @messages.group_by { |m| m.created_at.to_date }.each do |date, messages| %>
+            <% if current_date != date %>
+              <div class="flex items-center gap-2 my-4">
+                <div class="flex-1 h-px bg-slate-200"></div>
+                <span class="text-xs text-slate-500 px-2">
+                  <%= date == Date.today ? "오늘" : date.strftime("%m월 %d일") %>
+                </span>
+                <div class="flex-1 h-px bg-slate-200"></div>
+              </div>
+              <% current_date = date %>
+            <% end %>
+            
+            <% previous_message = nil %>
+            <% messages.each do |message| %>
+              <% if message.thread_root_id.nil? %>
+                <div id="message-wrapper-<%= message.id %>">
+                  <%= render "messages/message_grouped", message: message, previous_message: previous_message %>
+                  <% previous_message = message %>
+                  <!-- Thread replies container -->
+                  <div id="thread-replies-<%= message.id %>" class="thread-replies">
+                    <% if message.thread_messages.any? %>
+                      <% thread_previous = nil %>
+                      <% message.thread_messages.includes(:user, :reactions).each do |reply| %>
+                        <div class="ml-12">
+                          <%= render 'messages/message_grouped', message: reply, previous_message: thread_previous %>
+                          <% thread_previous = reply %>
+                        </div>
+                      <% end %>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            <% end %>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="flex items-center justify-center h-full" id="empty-messages">
+          <div class="text-center">
+            <p class="text-sm text-slate-500">아직 메시지가 없습니다</p>
+            <p class="text-xs text-slate-400 mt-1">첫 메시지를 보내보세요!</p>
+          </div>
+        </div>
+      <% end %>
+    </div>
+    
+    <!-- Message Input -->
+    <div class="border-t border-slate-200 p-4">
+      <%= render "messages/form", channel: @current_channel, message: @message %>
+    </div>
+  <% else %>
+    <!-- No Channels -->
+    <div class="flex items-center justify-center h-full">
+      <div class="text-center">
+        <p class="text-sm text-slate-500">참여중인 채널이 없습니다</p>
+        <p class="text-xs text-slate-400 mt-1">사이드바에서 채널을 생성하거나 참여하세요</p>
+      </div>
+    </div>
+  <% end %>
+  </div>
+  
+  <!-- Channel List Sidebar -->
+  <div class="hidden lg:flex w-64 bg-white rounded-lg shadow-sm flex-col">
+    <!-- Channel List Header -->
+    <div class="px-4 flex items-center border-b border-slate-200" style="height: 54px;">
+      <div class="flex items-center justify-between w-full">
+        <h3 class="text-base font-semibold text-slate-900">채널</h3>
+        <button onclick="toggleChannelForm()" class="text-slate-400 hover:text-slate-600 transition-colors">
+          <%= icon "plus", library: "tabler", class: "w-5 h-5" %>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Channel Search -->
+    <div class="p-2">
+      <div class="relative">
+        <input type="text" 
+               placeholder="채널 검색..." 
+               class="w-full pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75]"
+               onkeyup="filterChannels(this.value)">
+        <%= icon "search", library: "tabler", class: "absolute left-2.5 top-2 w-4 h-4 text-slate-400 pointer-events-none" %>
+      </div>
+    </div>
+    
+    <!-- Channel List -->
+    <div class="flex-1 overflow-y-auto">
+      <% if @channels && @channels.any? %>
+        <div class="p-2" id="channelsList">
+          <% @channels.each do |channel| %>
+            <% is_current = @current_channel&.id == channel.id %>
+            <a href="<%= chat_channel_path(channel) %>" 
+               class="channel-item flex items-center gap-2 px-3 py-2 rounded-md transition-colors <%= is_current ? 'bg-[#FFF0F1] text-[#FF6D75]' : 'hover:bg-slate-50 text-slate-700' %>"
+               data-channel-name="<%= channel.name.downcase %>"
+               data-turbo-frame="_top">
+              <span class="text-base <%= is_current ? 'text-[#FF6D75]' : 'text-slate-400' %>">#</span>
+              <span class="flex-1 text-sm font-medium truncate"><%= channel.name %></span>
+              <div class="flex items-center gap-1.5">
+                <% if channel.is_private? %>
+                  <%= icon "lock", library: "tabler", class: "w-3.5 h-3.5 #{is_current ? 'text-[#FF6D75]' : 'text-slate-400'}" %>
+                <% end %>
+                <span class="text-xs <%= is_current ? 'text-[#FF6D75]' : 'text-slate-400' %>">
+                  <%= channel.users.count %>
+                </span>
+                <% unread_count = channel.unread_messages_count_for(current_user) %>
+                <% if unread_count > 0 %>
+                  <span class="px-1.5 py-0.5 text-xs font-medium bg-[#FF6D75] text-white rounded-full">
+                    <%= unread_count > 99 ? '99+' : unread_count %>
+                  </span>
+                <% end %>
+              </div>
+            </a>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="flex items-center justify-center h-full p-4">
+          <div class="text-center">
+            <p class="text-sm text-slate-500 mb-2">채널이 없습니다</p>
+            <button onclick="toggleChannelForm()" class="text-sm text-[#FF6D75] hover:text-[#E85560]">
+              첫 채널 만들기
+            </button>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- Members Management Modal -->
+<div id="membersModal" class="fixed inset-0 hidden z-50 flex items-center justify-center transition-opacity duration-200" style="background-color: rgba(0, 0, 0, 0.2);" onclick="if(event.target === this) toggleMembersModal()">
+  <div class="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 transform transition-all duration-200 scale-95 opacity-0" id="membersModalContent">
+    <div class="border-b border-slate-200 px-6 py-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-slate-900">채널 멤버 관리</h3>
+        <button onclick="toggleMembersModal()" class="text-slate-400 hover:text-slate-600">
+          <%= icon "x", library: "tabler", class: "w-5 h-5" %>
+        </button>
+      </div>
+    </div>
+    
+    <div class="p-6">
+      <!-- Current Members -->
+      <div class="mb-6">
+        <h4 class="text-sm font-medium text-slate-700 mb-3">현재 멤버</h4>
+        <div class="space-y-2 max-h-60 overflow-y-auto" id="currentMembersList">
+          <!-- Members will be loaded dynamically -->
+        </div>
+      </div>
+      
+      <!-- Add New Members -->
+      <div>
+        <h4 class="text-sm font-medium text-slate-700 mb-3">멤버 추가</h4>
+        <div class="mb-3">
+          <input type="text" 
+                 placeholder="이름으로 검색..." 
+                 class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75]"
+                 onkeyup="filterAvailableMembers(this.value)">
+        </div>
+        <div class="border border-slate-200 rounded-md max-h-40 overflow-y-auto">
+          <div id="availableMembersList" class="p-2">
+            <!-- Available members will be loaded dynamically -->
+          </div>
+        </div>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="flex justify-end gap-2 pt-6 border-t border-slate-100 mt-6">
+        <button type="button" 
+                onclick="toggleMembersModal()" 
+                class="px-4 py-2 border border-slate-200 rounded-md text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors">
+          닫기
+        </button>
+        <button type="button"
+                onclick="saveChannelMembers()"
+                class="px-4 py-2 bg-[#FF6D75] text-white rounded-md hover:bg-[#E85560] text-sm font-medium transition-colors">
+          변경사항 저장
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Shared Emoji Picker -->
+<div id="emoji-picker" class="hidden fixed bg-white rounded-lg shadow-xl border border-slate-200 p-3 z-50" style="width: 280px;">
+  <div class="grid grid-cols-7 gap-1">
+    <% %w[👍 🎉 🚀 👀 😂 ❤️ 🔥 🙏 👏 🙌 🤔 😅 🤝 💯 😎 📝 📈 📅 ⏰ 🔔 ✅ ❌ ⭕ ❗ ❓].each do |emoji| %>
+      <button class="w-9 h-9 hover:bg-slate-100 rounded flex items-center justify-center text-lg"
+              onclick="addReaction(currentMessageId, '<%= emoji %>')">
+        <%= emoji %>
+      </button>
+    <% end %>
+  </div>
+</div>
+
+<!-- Shared More Menu -->
+<div id="moreMenu" class="hidden fixed bg-white rounded-lg shadow-xl border border-slate-200 py-1 z-50" style="min-width: 150px;">
+  <button class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+          onclick="pinMessage()">
+    📌 메시지 고정
+  </button>
+  <button class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+          onclick="shareMessage(currentMessageId)">
+    ↗️ 공유
+  </button>
+  <button class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+          onclick="forwardMessage(currentMessageId)">
+    📤 전달
+  </button>
+  
+  <hr id="delete-separator" class="my-1 border-slate-200 hidden">
+  <button id="delete-button" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 hidden"
+          onclick="deleteMessage(currentMessageId)">
+    🗑️ 삭제
+  </button>
+</div>
+
+<!-- Note Selection Modal -->
+<div id="noteModal" class="fixed inset-0 hidden z-50 flex items-center justify-center" style="background-color: rgba(0, 0, 0, 0.2);" onclick="if(event.target === this) toggleNoteModal()">
+  <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col">
+    <div class="border-b border-slate-200 px-6 py-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-slate-900">노트 선택</h3>
+        <button onclick="toggleNoteModal()" class="p-1 hover:bg-slate-100 rounded">
+          <%= icon "x", library: "tabler", class: "w-5 h-5 text-slate-500" %>
+        </button>
+      </div>
+    </div>
+    
+    <div class="p-6 overflow-y-auto flex-1">
+      <!-- Search bar -->
+      <div class="mb-4">
+        <input type="text" 
+               placeholder="노트 검색..." 
+               class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75]"
+               onkeyup="searchNotes(this.value)">
+      </div>
+      
+      <!-- Notes list -->
+      <div id="notes-list" class="space-y-2">
+        <% if current_user && current_user.current_workspace %>
+          <% current_user.current_workspace.notes.includes(:category, :status).order(updated_at: :desc).limit(20).each do |note| %>
+            <div class="note-item border border-slate-200 rounded-lg p-4 hover:border-[#FF6D75] cursor-pointer transition-all" 
+                 data-title="<%= note.title.downcase %>"
+                 onclick="selectNote(<%= note.id %>, '<%= note.title %>', '<%= note.category.name %>', '<%= note.status.name %>')">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <h4 class="font-medium text-slate-900"><%= note.title %></h4>
+                  <p class="text-sm text-slate-600 mt-1 line-clamp-2"><%= note.body.truncate(100) %></p>
+                  <div class="flex items-center gap-3 mt-2">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium" 
+                          style="background-color: <%= note.category.color %>20; color: <%= note.category.color %>">
+                      <%= note.category.name %>
+                    </span>
+                    <span class="text-xs text-slate-500"><%= note.updated_at.strftime("%m/%d") %></span>
+                  </div>
+                </div>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium" 
+                      style="background-color: <%= note.status.color %>20; color: <%= note.status.color %>">
+                  <%= note.status.name %>
+                </span>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Thread View Panel -->
+<div id="threadPanel" class="hidden fixed right-0 top-0 h-full w-96 bg-white shadow-2xl z-40 flex flex-col">
+  <!-- Thread Header -->
+  <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+    <h3 class="text-base font-semibold text-slate-900">스레드</h3>
+    <button onclick="closeThread()" class="p-1 hover:bg-slate-100 rounded">
+      <%= icon "x", library: "tabler", class: "w-5 h-5 text-slate-500" %>
+    </button>
+  </div>
+  
+  <!-- Original Message -->
+  <div id="threadOriginalMessage" class="p-4 border-b border-slate-100 bg-slate-50">
+    <!-- Original message will be loaded here -->
+  </div>
+  
+  <!-- Thread Messages -->
+  <div id="threadMessages" class="flex-1 overflow-y-auto p-4">
+    <!-- Thread replies will be loaded here -->
+  </div>
+  
+  <!-- Thread Reply Input -->
+  <div class="border-t border-slate-200 p-4">
+    <form id="threadReplyForm" onsubmit="sendThreadReply(event)">
+      <div class="flex items-center gap-3 bg-slate-50 rounded-lg px-4 py-3">
+        <textarea name="reply_body" 
+                  rows="2" 
+                  class="flex-1 bg-transparent outline-none text-sm placeholder-slate-400 resize-none"
+                  placeholder="답글을 입력하세요..."
+                  onkeydown="handleThreadKeyPress(event)"></textarea>
+        <button type="submit">
+          <%= icon "send", library: "tabler", class: "w-5 h-5 text-slate-400 cursor-pointer hover:text-slate-600" %>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// Set current user ID for message ownership checks
+window.currentUserId = <%= current_user.id %>;
+
+let currentMessageId = null;
+let currentMessageUserId = null;
+
+// Pinned messages functionality
+let pinnedMessages = <%= (@pinned_messages.any? ? @pinned_messages.map { |msg| 
+  { 
+    id: msg.id, 
+    body: msg.body.truncate(100), 
+    user_name: msg.user.name 
+  } 
+}.to_json.html_safe : '[]') %>;
+let currentPinnedIndex = 0;
+
+function showEmojiPicker(event, messageId) {
+  event.stopPropagation();
+  closeAllPopups();
+  currentMessageId = messageId;
+  
+  const picker = document.getElementById('emoji-picker');
+  const rect = event.target.getBoundingClientRect();
+  
+  picker.style.position = 'fixed';
+  picker.style.top = (rect.bottom + 5) + 'px';
+  picker.style.left = Math.min(rect.left, window.innerWidth - 300) + 'px';
+  picker.classList.remove('hidden');
+}
+
+function showMoreMenu(event, messageId) {
+  event.stopPropagation();
+  closeAllPopups();
+  currentMessageId = messageId;
+  
+  const menu = document.getElementById('moreMenu');
+  const rect = event.target.getBoundingClientRect();
+  const messageEl = document.getElementById(`message-${messageId}`);
+  const isOwner = messageEl.dataset.userId == window.currentUserId;
+  
+  // Show/hide delete button for message owner
+  if (isOwner) {
+    document.getElementById('delete-separator').classList.remove('hidden');
+    document.getElementById('delete-button').classList.remove('hidden');
+  } else {
+    document.getElementById('delete-separator').classList.add('hidden');
+    document.getElementById('delete-button').classList.add('hidden');
+  }
+  
+  menu.style.position = 'fixed';
+  menu.style.top = (rect.bottom + 5) + 'px';
+  menu.style.right = (window.innerWidth - rect.right) + 'px';
+  menu.classList.remove('hidden');
+}
+
+function closeAllPopups() {
+  document.getElementById('emoji-picker').classList.add('hidden');
+  document.getElementById('moreMenu').classList.add('hidden');
+}
+
+async function addReaction(messageId, emoji) {
+  closeAllPopups();
+  
+  try {
+    // Optimistically update UI first
+    const messageElement = document.getElementById(`message-${messageId}`);
+    let reactionsContainer = messageElement.querySelector('.flex.flex-wrap.gap-2.mt-2');
+    
+    if (reactionsContainer) {
+      // Find existing reaction button for this emoji
+      const existingButton = Array.from(reactionsContainer.querySelectorAll('button')).find(btn => 
+        btn.textContent.includes(emoji)
+      );
+      
+      if (existingButton) {
+        // Update count
+        const countSpan = existingButton.querySelector('.font-medium');
+        const currentCount = parseInt(countSpan.textContent);
+        countSpan.textContent = currentCount + 1;
+      } else {
+        // Add new reaction with proper structure
+        const reactionDiv = document.createElement('div');
+        reactionDiv.className = 'relative group/reaction';
+        
+        const newButton = document.createElement('button');
+        newButton.className = 'inline-flex items-center gap-1 hover:scale-110 transition-transform';
+        newButton.setAttribute('onclick', `toggleReaction('${messageId}', '${emoji}')`);
+        const emojiSpan = document.createElement('span');
+        emojiSpan.className = 'text-xl';
+        emojiSpan.textContent = emoji;
+        const countSpan = document.createElement('span');
+        countSpan.className = 'text-xs font-medium text-slate-500';
+        countSpan.textContent = '1';
+        newButton.appendChild(emojiSpan);
+        newButton.appendChild(countSpan);
+        
+        reactionDiv.appendChild(newButton);
+        reactionsContainer.appendChild(reactionDiv);
+      }
+    } else {
+      // Create reactions container if it doesn't exist
+      const newContainer = document.createElement('div');
+      newContainer.className = 'flex flex-wrap gap-2 mt-2';
+      
+      const reactionDiv = document.createElement('div');
+      reactionDiv.className = 'relative group/reaction';
+      
+      const newButton = document.createElement('button');
+      newButton.className = 'inline-flex items-center gap-1 hover:scale-110 transition-transform';
+      newButton.setAttribute('onclick', `toggleReaction('${messageId}', '${emoji}')`);
+      const emojiSpan2 = document.createElement('span');
+      emojiSpan2.className = 'text-xl';
+      emojiSpan2.textContent = emoji;
+      const countSpan2 = document.createElement('span');
+      countSpan2.className = 'text-xs font-medium text-slate-500';
+      countSpan2.textContent = '1';
+      newButton.appendChild(emojiSpan2);
+      newButton.appendChild(countSpan2);
+      
+      reactionDiv.appendChild(newButton);
+      newContainer.appendChild(reactionDiv);
+      messageElement.querySelector('.flex-1.min-w-0').appendChild(newContainer);
+    }
+    
+    const response = await fetch(`/messages/${messageId}/reactions/toggle`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      },
+      body: JSON.stringify({ emoji: emoji })
+    });
+    
+    if (!response.ok) {
+      console.error('Failed to add reaction');
+      // Only reload if there was an actual error
+      window.location.reload();
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    // Only reload if there was an actual error
+    window.location.reload();
+  }
+}
+
+async function toggleReaction(messageId, emoji) {
+  try {
+    const response = await fetch(`/messages/${messageId}/toggle_reaction`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      },
+      body: JSON.stringify({ emoji: emoji })
+    });
+    
+    if (!response.ok) throw new Error('Failed to toggle reaction');
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+function replyToMessage(messageId, userName) {
+  // Find the message input field (could be input or textarea)
+  const messageInput = document.querySelector('#message_body') || document.querySelector('input[name="message[body]"]') || document.querySelector('textarea[name="message[body]"]');
+  const parentMessageIdField = document.getElementById('parent_message_id');
+  
+  if (messageInput) {
+    // Set the parent message ID in the hidden field
+    if (parentMessageIdField) {
+      parentMessageIdField.value = messageId;
+    }
+    
+    // Also set it as data attribute for backward compatibility
+    messageInput.dataset.parentMessageId = messageId;
+    messageInput.dataset.replyToId = messageId;
+    messageInput.focus();
+    
+    // Show visual indicator that we're replying
+    const replyIndicator = document.createElement('div');
+    replyIndicator.id = 'replyIndicator';
+    replyIndicator.className = 'mb-2 px-3 py-2 bg-slate-100 rounded-lg flex items-center justify-between text-sm';
+    replyIndicator.innerHTML = `
+      <span class="text-slate-600">
+        <span class="text-purple-600">@${userName}</span>에게 답글 작성 중...
+      </span>
+      <button onclick="cancelReply()" class="text-slate-400 hover:text-slate-600">
+        <%= icon "x", library: "tabler", class: "w-4 h-4" %>
+      </button>
+    `;
+    
+    const formContainer = messageInput.closest('.bg-slate-50');
+    if (!document.getElementById('replyIndicator') && formContainer) {
+      formContainer.parentNode.insertBefore(replyIndicator, formContainer);
+    }
+  }
+}
+
+function cancelReply() {
+  // Find the message input field (could be input or textarea)
+  const messageInput = document.querySelector('#message_body') || document.querySelector('input[name="message[body]"]') || document.querySelector('textarea[name="message[body]"]');
+  const parentMessageIdField = document.getElementById('parent_message_id');
+  
+  if (messageInput) {
+    delete messageInput.dataset.parentMessageId;
+    delete messageInput.dataset.replyToId;
+  }
+  
+  if (parentMessageIdField) {
+    parentMessageIdField.value = '';
+  }
+  
+  const indicator = document.getElementById('replyIndicator');
+  if (indicator) {
+    indicator.remove();
+  }
+}
+
+async function toggleSave(messageId) {
+  try {
+    const response = await fetch(`/messages/${messageId}/save`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      }
+    });
+    
+    if (!response.ok) throw new Error('Failed to save message');
+    showToast('메시지가 저장되었습니다');
+  } catch (error) {
+    console.error('Error:', error);
+    showToast('저장 중 오류가 발생했습니다');
+  }
+}
+
+async function togglePinMessage(messageId) {
+  try {
+    const response = await fetch(`/messages/${messageId}/pin`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content,
+        "Accept": "text/vnd.turbo-stream.html"
+      }
+    });
+    
+    if (response.ok) {
+      // Process Turbo Stream response
+      const text = await response.text();
+      if (text && text.trim()) {
+        // Create a temporary element to hold the response
+        const temp = document.createElement('div');
+        temp.innerHTML = text;
+        
+        // Execute Turbo Stream actions manually
+        const turboStreamElements = temp.querySelectorAll('turbo-stream');
+        turboStreamElements.forEach(streamElement => {
+          const action = streamElement.getAttribute('action');
+          const target = streamElement.getAttribute('target');
+          
+          if (action === 'replace') {
+            const targetElement = document.getElementById(target);
+            if (targetElement) {
+              const template = streamElement.querySelector('template');
+              if (template) {
+                targetElement.outerHTML = template.innerHTML;
+              }
+            }
+          } else if (action === 'update') {
+            const targetElement = document.getElementById(target);
+            if (targetElement) {
+              const template = streamElement.querySelector('template');
+              if (template) {
+                targetElement.innerHTML = template.innerHTML;
+              }
+            }
+          }
+        });
+        
+        // Update pinned messages bar if needed
+        const pinnedBar = document.getElementById('pinnedMessagesBar');
+        if (pinnedBar) {
+          window.location.reload();
+        }
+      }
+      showToast("메시지 고정 상태가 변경되었습니다");
+    } else {
+      throw new Error('Failed to toggle pin');
+    }
+  } catch (error) {
+    console.error("Error pinning message:", error);
+    showToast("고정 중 오류가 발생했습니다");
+  }
+}
+
+async function togglePin(messageId) {
+  closeAllPopups();
+  await togglePinMessage(messageId);
+}
+
+function copyMessage(messageId) {
+  const messageContent = document.getElementById(`message-content-${messageId}`);
+  if (!messageContent) {
+    showToast('메시지를 찾을 수 없습니다');
+    return;
+  }
+  
+  const text = messageContent.textContent || messageContent.innerText;
+  
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('메시지가 클립보드에 복사되었습니다');
+  }).catch(err => {
+    console.error('복사 실패:', err);
+    showToast('복사에 실패했습니다');
+  });
+}
+
+let selectedShareChannelId = null;
+let sharingMessageId = null;
+
+function shareMessage(messageId) {
+  closeAllPopups();
+  sharingMessageId = messageId;
+  selectedShareChannelId = null;
+  
+  // Show modal
+  const modal = document.getElementById('shareChannelModal');
+  const content = document.getElementById('shareChannelModalContent');
+  modal.classList.remove('hidden');
+  
+  setTimeout(() => {
+    modal.classList.remove('opacity-0');
+    content.classList.remove('scale-95', 'opacity-0');
+    content.classList.add('scale-100', 'opacity-100');
+  }, 10);
+  
+  // Load channels
+  loadShareChannels();
+}
+
+async function loadShareChannels() {
+  try {
+    const response = await fetch('/channels.json');
+    const channels = await response.json();
+    
+    const currentChannelId = <%= @current_channel&.id || 'null' %>;
+    const shareableChannels = channels.filter(ch => ch.id !== currentChannelId);
+    
+    const channelsList = document.getElementById('shareChannelsList');
+    channelsList.innerHTML = shareableChannels.map(channel => `
+      <label class="flex items-center p-3 hover:bg-slate-50 rounded cursor-pointer share-channel-item"
+             data-channel-name="${channel.name.toLowerCase()}">
+        <input type="radio" 
+               name="share_channel" 
+               value="${channel.id}"
+               data-channel-name="${channel.name}"
+               onchange="selectShareChannel(${channel.id}, '${channel.name}')"
+               class="h-4 w-4 text-[#FF6D75] focus:ring-[#FF6D75] border-slate-300">
+        <span class="ml-3 flex items-center gap-2">
+          <span class="text-slate-400">#</span>
+          <span class="text-sm text-slate-700">${channel.name}</span>
+          ${channel.is_private ? '<span class="text-xs text-slate-400">(비공개)</span>' : ''}
+        </span>
+      </label>
+    `).join('') || '<p class="text-sm text-slate-500 text-center py-4">공유 가능한 채널이 없습니다</p>';
+    
+  } catch (error) {
+    console.error('Error loading channels:', error);
+    showToast('채널 목록을 불러오는데 실패했습니다');
+  }
+}
+
+function selectShareChannel(channelId, channelName) {
+  selectedShareChannelId = channelId;
+  document.getElementById('selectedChannelName').textContent = channelName;
+  document.getElementById('selectedChannelPreview').classList.remove('hidden');
+  document.getElementById('shareConfirmButton').disabled = false;
+}
+
+function filterShareChannels(searchTerm) {
+  const items = document.querySelectorAll('.share-channel-item');
+  const term = searchTerm.toLowerCase();
+  
+  items.forEach(item => {
+    const name = item.dataset.channelName;
+    item.style.display = name.includes(term) ? 'flex' : 'none';
+  });
+}
+
+function closeShareModal() {
+  const modal = document.getElementById('shareChannelModal');
+  const content = document.getElementById('shareChannelModalContent');
+  
+  content.classList.remove('scale-100', 'opacity-100');
+  content.classList.add('scale-95', 'opacity-0');
+  modal.classList.add('opacity-0');
+  
+  setTimeout(() => {
+    modal.classList.add('hidden');
+    modal.classList.remove('opacity-0');
+    
+    // Reset
+    selectedShareChannelId = null;
+    sharingMessageId = null;
+    document.getElementById('selectedChannelPreview').classList.add('hidden');
+    document.getElementById('shareConfirmButton').disabled = true;
+    
+    // Clear search
+    const searchInput = modal.querySelector('input[placeholder="채널 검색..."]');
+    if (searchInput) searchInput.value = '';
+  }, 200);
+}
+
+async function confirmShareMessage() {
+  if (!selectedShareChannelId || !sharingMessageId) return;
+  
+  try {
+    const response = await fetch(`/messages/${sharingMessageId}/share`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ target_channel_id: selectedShareChannelId })
+    });
+    
+    if (response.ok) {
+      showToast('메시지가 공유되었습니다');
+      closeShareModal();
+    } else {
+      throw new Error('Failed to share message');
+    }
+  } catch (error) {
+    console.error('Error sharing message:', error);
+    showToast('메시지 공유에 실패했습니다');
+  }
+}
+
+function forwardMessage(messageId) {
+  closeAllPopups();
+  showToast('전달 기능은 준비 중입니다');
+}
+
+async function deleteMessage(messageId) {
+  closeAllPopups();
+  
+  if (!confirm('메시지를 삭제하시겠습니까?')) return;
+  
+  try {
+    const channelId = <%= @current_channel&.id || 'null' %>;
+    if (!channelId) {
+      showToast('채널을 찾을 수 없습니다');
+      return;
+    }
+    
+    const response = await fetch(`/channels/${channelId}/messages/${messageId}`, {
+      method: 'DELETE',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Accept': 'text/vnd.turbo-stream.html'
+      }
+    });
+    
+    if (response.ok) {
+      try {
+        // Process the turbo stream response
+        const text = await response.text();
+        if (text && text.trim()) {
+          console.log('[Delete] Turbo Stream response:', text);
+          
+          // Process the Turbo Stream manually
+          const temp = document.createElement('div');
+          temp.innerHTML = text;
+          
+          const turboStreamElements = temp.querySelectorAll('turbo-stream');
+          turboStreamElements.forEach(streamElement => {
+            const action = streamElement.getAttribute('action');
+            const target = streamElement.getAttribute('target');
+            
+            if (action === 'remove') {
+              const targetElement = document.getElementById(target);
+              if (targetElement) {
+                targetElement.remove();
+              }
+            } else if (action === 'replace') {
+              const targetElement = document.getElementById(target);
+              if (targetElement) {
+                const template = streamElement.querySelector('template');
+                if (template) {
+                  targetElement.outerHTML = template.innerHTML;
+                }
+              }
+            }
+          });
+        }
+        showToast('메시지가 삭제되었습니다');
+      } catch (e) {
+        // If Turbo stream fails, manually remove the element
+        const messageEl = document.getElementById(`message-${messageId}`);
+        if (messageEl) {
+          messageEl.remove();
+        }
+        showToast('메시지가 삭제되었습니다');
+      }
+    } else {
+      throw new Error('Failed to delete message');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    showToast('삭제 중 오류가 발생했습니다');
+  }
+}
+
+function showToast(message) {
+  const toast = document.createElement('div');
+  toast.className = 'fixed bottom-4 right-4 bg-slate-900 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in';
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  setTimeout(() => toast.remove(), 3000);
+}
+
+function editMessage(messageId) {
+  const messageEl = document.getElementById(`message-${messageId}`);
+  const messageContent = document.getElementById(`message-content-${messageId}`);
+  
+  if (!messageContent) return;
+  
+  // Add editing class to hide action buttons
+  messageEl.classList.add('editing');
+  
+  // Get the original message body from data attribute or extract from HTML
+  const messageData = messageEl.dataset.messageBody;
+  let cleanText = '';
+  
+  if (messageData) {
+    cleanText = messageData;
+  } else {
+    // Extract text and convert <br> back to newlines
+    const htmlContent = messageContent.innerHTML;
+    cleanText = htmlContent
+      .replace(/<br>/g, '\n')
+      .replace(/<[^>]*>/g, '') // Remove all other HTML tags
+      .trim();
+    
+    // Remove reply mention if it exists
+    const replyMatch = cleanText.match(/^↩️\s*@\w+\s*/);
+    if (replyMatch) {
+      cleanText = cleanText.substring(replyMatch[0].length);
+    }
+  }
+  
+  // Create edit form - always use textarea for consistency
+  const editForm = document.createElement('form');
+  editForm.className = 'flex gap-2 items-end';
+  
+  // Always use textarea to support Shift+Enter
+  const escapedText = cleanText.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  
+  // Calculate initial rows based on line breaks
+  const lineCount = cleanText.split('\n').length;
+  const initialRows = lineCount === 1 ? 1 : Math.min(lineCount, 10);
+  
+  editForm.innerHTML = `
+    <textarea class="flex-1 px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400 resize-none overflow-hidden" 
+              style="line-height: 1.5;" 
+              rows="${initialRows}">${escapedText}</textarea>
+    <button type="submit" class="px-3 py-1.5 bg-[#FF6D75] text-white text-sm rounded-md hover:bg-[#E85560]">저장</button>
+    <button type="button" onclick="cancelEdit('${messageId}')" class="px-3 py-1.5 bg-slate-200 text-slate-700 text-sm rounded-md hover:bg-slate-300">취소</button>
+  `;
+  
+  // Hide all content and replace with form
+  const messageContainer = messageContent.parentNode;
+  
+  // Hide original message
+  messageContent.style.display = 'none';
+  
+  // Hide any existing YouTube/link previews, reactions, thread previews
+  const previews = messageContainer.querySelectorAll('.youtube-preview, .link-preview, .mt-2, .mt-3');
+  previews.forEach(el => el.style.display = 'none');
+  
+  // Insert edit form
+  messageContainer.insertBefore(editForm, messageContent.nextSibling);
+  
+  // Focus on textarea
+  const textarea = editForm.querySelector('textarea');
+  
+  // Auto-resize function
+  function autoResize() {
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+  }
+  
+  // Initial resize to fit content
+  setTimeout(() => {
+    autoResize();
+  }, 0);
+  
+  // Add input event listener for auto-resize
+  textarea.addEventListener('input', autoResize);
+  
+  textarea.focus();
+  textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+  
+  // Add keyboard event handlers
+  textarea.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      if (e.shiftKey) {
+        // Shift+Enter: allow new line - just let it happen naturally
+        return;
+      } else {
+        // Enter without Shift: submit form
+        e.preventDefault();
+        editForm.dispatchEvent(new Event('submit'));
+      }
+    } else if (e.key === 'Escape') {
+      // Escape: cancel edit
+      e.preventDefault();
+      cancelEdit(messageId);
+    }
+  });
+  
+  // Handle form submission
+  editForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newBody = textarea.value.trim();
+    
+    if (!newBody) {
+      showToast('메시지를 입력해주세요');
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/messages/${messageId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+          'Accept': 'text/vnd.turbo-stream.html'
+        },
+        body: JSON.stringify({ message: { body: newBody } })
+      });
+      
+      if (!response.ok) throw new Error('Failed to update message');
+      
+      // Process Turbo Stream response
+      const text = await response.text();
+      console.log('[Edit] Turbo Stream response:', text);
+      
+      if (text && text.trim()) {
+        // Create a temporary element to hold the response
+        const temp = document.createElement('div');
+        temp.innerHTML = text;
+        
+        // Execute Turbo Stream actions manually
+        const turboStreamElements = temp.querySelectorAll('turbo-stream');
+        turboStreamElements.forEach(streamElement => {
+          const action = streamElement.getAttribute('action');
+          const target = streamElement.getAttribute('target');
+          
+          if (action === 'replace') {
+            const targetElement = document.getElementById(target);
+            if (targetElement) {
+              const template = streamElement.querySelector('template');
+              if (template) {
+                targetElement.outerHTML = template.innerHTML;
+              }
+            }
+          }
+        });
+      }
+      
+      showToast('메시지가 수정되었습니다');
+    } catch (error) {
+      console.error('Error:', error);
+      showToast('수정 중 오류가 발생했습니다');
+      cancelEdit(messageId);
+    }
+  });
+  
+  // Handle keyboard shortcuts
+  inputElement.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      cancelEdit(messageId);
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      editForm.dispatchEvent(new Event('submit'));
+    }
+  });
+}
+
+function cancelEdit(messageId) {
+  const messageEl = document.getElementById(`message-${messageId}`);
+  const messageContent = document.getElementById(`message-content-${messageId}`);
+  const editForm = messageEl.querySelector('form');
+  
+  // Remove editing class to show action buttons again
+  messageEl.classList.remove('editing');
+  
+  if (editForm) {
+    editForm.remove();
+  }
+  
+  if (messageContent) {
+    messageContent.style.display = '';
+  }
+}
+
+let selectedMemberNames = [];
+
+function toggleChannelForm() {
+  const form = document.getElementById('channelForm');
+  const content = document.getElementById('channelFormContent');
+  const isHidden = form.classList.contains('hidden');
+  
+  if (isHidden) {
+    // Reset to step 1
+    document.getElementById('channelFormStep1').classList.remove('hidden');
+    document.getElementById('channelFormStep2').classList.add('hidden');
+    
+    // Show modal
+    form.classList.remove('hidden');
+    form.classList.add('opacity-0');
+    
+    // Trigger reflow
+    form.offsetHeight;
+    
+    // Fade in
+    form.classList.remove('opacity-0');
+    
+    // Scale up content
+    setTimeout(() => {
+      content.classList.remove('scale-95', 'opacity-0');
+      content.classList.add('scale-100', 'opacity-100');
+    }, 10);
+    
+    // Add ESC key listener
+    document.addEventListener('keydown', handleModalEscape);
+  } else {
+    // Hide modal with animation
+    content.classList.remove('scale-100', 'opacity-100');
+    content.classList.add('scale-95', 'opacity-0');
+    
+    setTimeout(() => {
+      form.classList.add('opacity-0');
+      setTimeout(() => {
+        form.classList.add('hidden');
+        form.classList.remove('opacity-0');
+        // Reset form
+        const formElement = form.querySelector('form');
+        if (formElement) formElement.reset();
+        // Clear search
+        const searchInput = form.querySelector('input[placeholder="이름으로 검색..."]');
+        if (searchInput) {
+          searchInput.value = '';
+          filterChannelMembers('');
+        }
+        // Clear selected members
+        selectedMemberNames = [];
+        document.getElementById('selectedMembersPreview').innerHTML = '';
+      }, 200);
+    }, 200);
+    
+    document.removeEventListener('keydown', handleModalEscape);
+  }
+}
+
+function updateSelectedMembers() {
+  const checkboxes = document.querySelectorAll('#membersList input[type="checkbox"]:checked');
+  selectedMemberNames = [];
+  
+  checkboxes.forEach(checkbox => {
+    const label = checkbox.closest('label');
+    const userName = label.dataset.userName;
+    selectedMemberNames.push(userName);
+  });
+  
+  // Update preview
+  const preview = document.getElementById('selectedMembersPreview');
+  if (selectedMemberNames.length > 0) {
+    preview.innerHTML = `선택된 멤버: <strong>${selectedMemberNames.join(', ')}</strong>`;
+  } else {
+    preview.innerHTML = '';
+  }
+}
+
+function goToChannelStep2() {
+  if (selectedMemberNames.length === 0) {
+    showToast('멤버를 최소 1명 이상 선택해주세요');
+    return;
+  }
+  
+  // Generate channel name
+  let channelName = '';
+  const currentUserName = '<%= current_user.name %>';
+  const allNames = [currentUserName, ...selectedMemberNames];
+  
+  if (allNames.length <= 3) {
+    channelName = allNames.join(', ');
+  } else {
+    const firstThree = allNames.slice(0, 3).join(', ');
+    channelName = `${firstThree}, 외`;
+  }
+  
+  // Keep the channel name as is (with spaces and commas)
+  
+  // Set channel name
+  document.getElementById('channel_name_field').value = channelName;
+  
+  // Switch to step 2
+  document.getElementById('channelFormStep1').classList.add('hidden');
+  document.getElementById('channelFormStep2').classList.remove('hidden');
+  
+  // Focus on channel name field
+  setTimeout(() => {
+    document.getElementById('channel_name_field').focus();
+  }, 100);
+}
+
+function goToChannelStep1() {
+  document.getElementById('channelFormStep2').classList.add('hidden');
+  document.getElementById('channelFormStep1').classList.remove('hidden');
+}
+
+function togglePrivateDescription() {
+  const checkbox = document.getElementById('channel_is_private');
+  const description = document.getElementById('privateChannelDescription');
+  
+  if (checkbox.checked) {
+    description.textContent = '(초대된 멤버만 접근 가능)';
+  } else {
+    description.textContent = '(체크해제시 누구나 참여 가능)';
+  }
+}
+
+function filterChannels(searchTerm) {
+  console.log('Filtering channels with term:', searchTerm);
+  const channelItems = document.querySelectorAll('.channel-item');
+  const term = searchTerm.toLowerCase().trim();
+  let visibleCount = 0;
+  
+  channelItems.forEach(item => {
+    const channelName = item.dataset.channelName || '';
+    console.log('Checking channel:', channelName, 'against term:', term);
+    
+    if (term === '' || channelName.includes(term)) {
+      item.style.display = 'flex';
+      visibleCount++;
+    } else {
+      item.style.display = 'none';
+    }
+  });
+  
+  console.log('Visible channels:', visibleCount);
+  
+  // Handle empty state
+  const channelsList = document.getElementById('channelsList');
+  let emptyState = document.querySelector('.channel-empty-state');
+  
+  if (visibleCount === 0 && term !== '') {
+    if (!emptyState) {
+      // Save original content
+      if (!channelsList.dataset.originalContent) {
+        channelsList.dataset.originalContent = channelsList.innerHTML;
+      }
+      channelsList.innerHTML += '<p class="channel-empty-state text-sm text-slate-500 text-center py-4">검색 결과가 없습니다</p>';
+    }
+  } else if (emptyState) {
+    emptyState.remove();
+  }
+  
+  // Restore original content when search is cleared
+  if (term === '' && channelsList.dataset.originalContent) {
+    channelsList.innerHTML = channelsList.dataset.originalContent;
+    delete channelsList.dataset.originalContent;
+    // Re-run filter to show all
+    document.querySelectorAll('.channel-item').forEach(item => {
+      item.style.display = 'flex';
+    });
+  }
+}
+
+async function toggleFavorite(channelId) {
+  const button = event.currentTarget;
+  const icon = button.querySelector('svg');
+  
+  console.log('Toggling favorite for channel:', channelId);
+  console.log('Current favorited state:', button.dataset.favorited);
+  console.log('CSRF Token:', document.querySelector('[name="csrf-token"]').content);
+  
+  try {
+    const response = await fetch(`/channels/${channelId}/toggle_favorite`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      credentials: 'same-origin'
+    });
+    
+    if (!response.ok) {
+      console.error('Response not OK. Status:', response.status);
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        console.error('Error response data:', errorData);
+        errorMessage = errorData.error || errorMessage;
+      } catch (e) {
+        console.error('Could not parse error response as JSON:', e);
+      }
+      throw new Error(errorMessage);
+    }
+    
+    const data = await response.json();
+    console.log('JSON response:', data);
+    
+    if (data.status === 'ok') {
+      button.dataset.favorited = data.is_favorited;
+      
+      if (data.is_favorited) {
+        button.style.color = '#FF6D75';
+        icon.classList.add('fill-current');
+      } else {
+        button.style.color = '#94a3b8';
+        icon.classList.remove('fill-current');
+      }
+      
+      // Simple reload to update sidebar
+      // This is temporary - we can improve this later
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+    }
+  } catch (error) {
+    console.error('Error toggling favorite:', error);
+    showToast('즐겨찾기 변경에 실패했습니다');
+  }
+}
+
+function handleModalEscape(e) {
+  if (e.key === 'Escape') {
+    toggleChannelForm();
+  }
+}
+
+function filterChannelMembers(searchTerm) {
+  const memberItems = document.querySelectorAll('.member-item');
+  const term = searchTerm.toLowerCase();
+  
+  memberItems.forEach(item => {
+    const name = item.dataset.name;
+    if (name.includes(term)) {
+      item.style.display = 'flex';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+}
+
+// Pin message functionality
+async function pinMessage() {
+  if (!currentMessageId) return;
+  closeAllPopups();
+  
+  try {
+    const response = await fetch(`/messages/${currentMessageId}/pin`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      }
+    });
+    
+    if (response.ok) {
+      // Reload to update pinned messages
+      window.location.reload();
+    } else {
+      console.error('Failed to pin message');
+    }
+  } catch (error) {
+    console.error('Error pinning message:', error);
+  }
+}
+
+function cycleThroughPinnedMessages() {
+  if (!pinnedMessages || pinnedMessages.length === 0) return;
+  
+  const currentPinnedMessage = pinnedMessages[currentPinnedIndex];
+  const messageElement = document.getElementById(`message-${currentPinnedMessage.id}`);
+  
+  if (messageElement) {
+    messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // Highlight temporarily
+    messageElement.classList.add('bg-amber-100');
+    setTimeout(() => {
+      messageElement.classList.remove('bg-amber-100');
+    }, 2000);
+  }
+  
+  // Update to next message
+  currentPinnedIndex = (currentPinnedIndex + 1) % pinnedMessages.length;
+  
+  // Update preview if multiple messages
+  if (pinnedMessages.length > 1) {
+    const nextMessage = pinnedMessages[currentPinnedIndex];
+    const previewElement = document.getElementById('pinnedMessagePreview');
+    if (previewElement) {
+      previewElement.innerHTML = `<span class="font-medium">${nextMessage.user_name}</span>: ${nextMessage.body}`;
+    }
+  }
+}
+
+function showAllPinnedMessages() {
+  if (!pinnedMessages || pinnedMessages.length === 0) return;
+  
+  // Create modal
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 z-50 flex items-center justify-center';
+  modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+  modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+  
+  const content = document.createElement('div');
+  content.className = 'bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col';
+  
+  content.innerHTML = `
+    <div class="border-b border-slate-200 px-6 py-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-slate-900">고정된 메시지</h3>
+        <button onclick="this.closest('.fixed').remove()" class="p-1 hover:bg-slate-100 rounded">
+          <svg class="w-5 h-5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto p-6">
+      <div class="space-y-3">
+        ${pinnedMessages.map(msg => `
+          <div class="p-4 bg-yellow-50 rounded-lg cursor-pointer hover:bg-yellow-100 transition-colors" 
+               onclick="document.getElementById('message-${msg.id}').scrollIntoView({ behavior: 'smooth', block: 'center' }); this.closest('.fixed').remove();">
+            <p class="text-sm font-medium text-slate-700">${msg.user_name}</p>
+            <p class="text-sm text-slate-600 mt-1">${msg.body}</p>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  
+  modal.appendChild(content);
+  document.body.appendChild(modal);
+}
+
+// Close popups when clicking outside
+document.addEventListener('click', () => {
+  closeAllPopups();
+});
+
+// Auto-scroll messages
+document.addEventListener('turbo:load', function() {
+  const messagesContainer = document.getElementById('messagesContainer');
+  if (messagesContainer) {
+    // Small delay to ensure DOM is fully rendered
+    setTimeout(() => {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }, 50);
+  }
+});
+
+// Auto-scroll on DOMContentLoaded (for initial page load)
+document.addEventListener('DOMContentLoaded', function() {
+  const messagesContainer = document.getElementById('messagesContainer');
+  if (messagesContainer) {
+    setTimeout(() => {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }, 50);
+  }
+});
+
+// Scroll on new messages
+document.addEventListener('turbo:stream-render', function() {
+  const messagesContainer = document.getElementById('messagesContainer');
+  if (messagesContainer) {
+    setTimeout(() => {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }, 100);
+  }
+});
+
+// Members Management Modal
+let currentChannelId = null;
+let membersToAdd = new Set();
+let membersToRemove = new Set();
+
+async function toggleMembersModal(channelId = null) {
+  const modal = document.getElementById('membersModal');
+  const content = document.getElementById('membersModalContent');
+  const isHidden = modal.classList.contains('hidden');
+  
+  if (isHidden && channelId) {
+    currentChannelId = channelId;
+    membersToAdd.clear();
+    membersToRemove.clear();
+    
+    // Show modal with animation
+    modal.classList.remove('hidden');
+    modal.classList.add('opacity-0');
+    modal.offsetHeight;
+    modal.classList.remove('opacity-0');
+    
+    setTimeout(() => {
+      content.classList.remove('scale-95', 'opacity-0');
+      content.classList.add('scale-100', 'opacity-100');
+    }, 10);
+    
+    // Load channel members
+    await loadChannelMembers(channelId);
+    
+    document.addEventListener('keydown', handleMembersModalEscape);
+  } else {
+    // Hide modal with animation
+    content.classList.remove('scale-100', 'opacity-100');
+    content.classList.add('scale-95', 'opacity-0');
+    
+    setTimeout(() => {
+      modal.classList.add('opacity-0');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('opacity-0');
+        currentChannelId = null;
+      }, 200);
+    }, 200);
+    
+    document.removeEventListener('keydown', handleMembersModalEscape);
+  }
+}
+
+function handleMembersModalEscape(e) {
+  if (e.key === 'Escape') {
+    toggleMembersModal();
+  }
+}
+
+async function loadChannelMembers(channelId) {
+  try {
+    console.log('Loading members for channel:', channelId);
+    const response = await fetch(`/channels/${channelId}/members`, {
+      headers: {
+        'Accept': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      }
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Failed to load members:', response.status, errorText);
+      throw new Error('Failed to load members');
+    }
+    
+    const data = await response.json();
+    console.log('Loaded members data:', data);
+    
+    // Display current members
+    const currentMembersList = document.getElementById('currentMembersList');
+    currentMembersList.innerHTML = data.current_members.map(member => `
+      <div class="flex items-center justify-between p-2 hover:bg-slate-50 rounded">
+        <div class="flex items-center gap-3">
+          ${member.avatar_url ? 
+            `<img src="${member.avatar_url}" alt="${member.name}" class="w-8 h-8 rounded-full">` :
+            `<div class="w-8 h-8 rounded-full bg-[#FF6D75] flex items-center justify-center text-white text-sm font-medium">
+              ${member.name.charAt(0).toUpperCase()}
+            </div>`
+          }
+          <div>
+            <div class="flex items-center gap-2">
+              <p class="text-sm font-medium text-slate-900">${member.name}</p>
+              ${member.role === 'admin' ? 
+                '<span class="px-1.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 rounded">관리자</span>' : 
+                ''
+              }
+            </div>
+            <p class="text-xs text-slate-500">${member.email}</p>
+          </div>
+        </div>
+        ${member.can_remove ? 
+          `<button onclick="toggleRemoveMember('${member.id}', '${member.name}')" 
+                   data-member-id="${member.id}"
+                   class="text-sm text-red-600 hover:text-red-700 remove-member-btn">
+            제거
+          </button>` : 
+          member.role === 'admin' ? 
+            '<span class="text-xs text-slate-400">제거 불가</span>' :
+            ''
+        }
+      </div>
+    `).join('');
+    
+    // Display available members
+    const availableMembersList = document.getElementById('availableMembersList');
+    availableMembersList.innerHTML = data.available_members.map(member => `
+      <label class="flex items-center p-2 hover:bg-slate-50 rounded cursor-pointer available-member-item" 
+             data-name="${member.name.toLowerCase()}"
+             data-member-id="${member.id}">
+        <input type="checkbox" 
+               value="${member.id}" 
+               onchange="toggleAddMember('${member.id}')"
+               class="h-4 w-4 text-[#FF6D75] focus:ring-[#FF6D75] border-slate-300 rounded">
+        <div class="ml-3">
+          <p class="text-sm font-medium text-slate-900">${member.name}</p>
+          <p class="text-xs text-slate-500">${member.email}</p>
+        </div>
+      </label>
+    `).join('') || '<p class="text-sm text-slate-500 text-center py-4">모든 사용자가 이미 채널에 참여중입니다</p>';
+    
+  } catch (error) {
+    console.error('Error loading members:', error);
+    showToast('멤버 목록을 불러오는데 실패했습니다');
+  }
+}
+
+function toggleAddMember(memberId) {
+  const checkbox = document.querySelector(`input[value="${memberId}"]`);
+  const memberItem = checkbox.closest('.available-member-item');
+  
+  if (checkbox.checked) {
+    membersToAdd.add(memberId);
+    
+    // Extract member info
+    const nameEl = memberItem.querySelector('.text-sm.font-medium');
+    const emailEl = memberItem.querySelector('.text-xs.text-slate-500');
+    const name = nameEl.textContent;
+    const email = emailEl.textContent;
+    
+    // Move to current members list
+    const currentMembersList = document.getElementById('currentMembersList');
+    const newMemberHtml = `
+      <div class="flex items-center justify-between p-2 hover:bg-slate-50 rounded opacity-60" id="pending-member-${memberId}">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-[#FF6D75] flex items-center justify-center text-white text-sm font-medium">
+            ${name.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <p class="text-sm font-medium text-slate-900">${name}</p>
+            <p class="text-xs text-slate-500">${email}</p>
+          </div>
+        </div>
+        <span class="text-xs text-green-600 font-medium">추가 예정</span>
+      </div>
+    `;
+    currentMembersList.insertAdjacentHTML('beforeend', newMemberHtml);
+    
+    // Hide from available list
+    memberItem.style.display = 'none';
+  } else {
+    membersToAdd.delete(memberId);
+    
+    // Remove from current members list
+    const pendingMember = document.getElementById(`pending-member-${memberId}`);
+    if (pendingMember) {
+      pendingMember.remove();
+    }
+    
+    // Show in available list again
+    memberItem.style.display = 'flex';
+  }
+}
+
+function toggleRemoveMember(memberId, memberName) {
+  const button = document.querySelector(`button[data-member-id="${memberId}"]`);
+  
+  if (membersToRemove.has(memberId)) {
+    membersToRemove.delete(memberId);
+    button.textContent = '제거';
+    button.classList.remove('line-through', 'opacity-50');
+  } else {
+    membersToRemove.add(memberId);
+    button.textContent = '제거 예정';
+    button.classList.add('line-through', 'opacity-50');
+  }
+}
+
+function filterAvailableMembers(searchTerm) {
+  const memberItems = document.querySelectorAll('.available-member-item');
+  const term = searchTerm.toLowerCase();
+  
+  memberItems.forEach(item => {
+    const name = item.dataset.name;
+    if (name.includes(term)) {
+      item.style.display = 'flex';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+}
+
+async function saveChannelMembers() {
+  if (membersToAdd.size === 0 && membersToRemove.size === 0) {
+    showToast('변경사항이 없습니다');
+    return;
+  }
+  
+  try {
+    console.log('Saving members - Add:', Array.from(membersToAdd), 'Remove:', Array.from(membersToRemove));
+    
+    const response = await fetch(`/channels/${currentChannelId}/update_members`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      },
+      body: JSON.stringify({
+        add_member_ids: Array.from(membersToAdd),
+        remove_member_ids: Array.from(membersToRemove)
+      })
+    });
+    
+    const data = await response.json();
+    console.log('Update response:', data);
+    
+    if (!response.ok) throw new Error('Failed to update members');
+    
+    showToast('멤버가 업데이트되었습니다');
+    toggleMembersModal();
+    
+    // Reload page to update member count
+    window.location.reload();
+    
+  } catch (error) {
+    console.error('Error updating members:', error);
+    showToast('멤버 업데이트에 실패했습니다');
+  }
+}
+
+// Toggle thread replies visibility
+function toggleThreadReplies(messageId) {
+  const repliesContainer = document.getElementById(`thread-replies-${messageId}`);
+  const chevron = document.getElementById(`thread-chevron-${messageId}`);
+  
+  if (repliesContainer) {
+    if (repliesContainer.classList.contains('hidden')) {
+      // Show replies
+      repliesContainer.classList.remove('hidden');
+      chevron.style.transform = 'rotate(0deg)';
+      chevron.textContent = '▼';
+    } else {
+      // Hide replies
+      repliesContainer.classList.add('hidden');
+      chevron.style.transform = 'rotate(-90deg)';
+      chevron.textContent = '▶';
+    }
+  }
+}
+
+// Thread functions
+let currentThreadMessageId = null;
+
+async function showThread(messageId) {
+  currentThreadMessageId = messageId;
+  const panel = document.getElementById('threadPanel');
+  
+  try {
+    // Load the original message and thread
+    const response = await fetch(`/messages/${messageId}/thread`);
+    if (response.ok) {
+      const data = await response.json();
+      
+      // Display original message
+      const originalContainer = document.getElementById('threadOriginalMessage');
+      originalContainer.innerHTML = formatThreadMessage(data.original_message);
+      
+      // Display thread replies with grouping
+      const threadContainer = document.getElementById('threadMessages');
+      threadContainer.innerHTML = data.thread_messages.map((msg, index, array) => {
+        const previousMsg = index > 0 ? array[index - 1] : null;
+        return formatThreadMessage(msg, previousMsg);
+      }).join('');
+      
+      // Show panel
+      panel.classList.remove('hidden');
+      document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+  } catch (error) {
+    console.error("Error loading thread:", error);
+    // Fallback: just show the panel with a loading state
+    panel.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function formatThreadMessage(message, previousMessage = null) {
+  const time = new Date(message.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+  const isSameUser = previousMessage && previousMessage.user_name === message.user_name;
+  
+  // Calculate time difference if same user
+  let timeDiff = 0;
+  if (isSameUser && previousMessage) {
+    const prevTime = new Date(previousMessage.created_at);
+    const currTime = new Date(message.created_at);
+    timeDiff = (currTime - prevTime) / 1000 / 60; // difference in minutes
+  }
+  
+  // Show full message if different user or more than 5 minutes gap
+  if (!isSameUser || timeDiff > 5) {
+    return `
+      <div class="flex gap-3 px-2 py-1.5 hover:bg-slate-50 rounded thread-message" data-user-name="${message.user_name}" data-created-at="${message.created_at}">
+        <div class="flex-shrink-0">
+          ${message.user_avatar_url ? 
+            `<img src="${message.user_avatar_url}" alt="${message.user_name}" class="w-8 h-8 rounded-full">` :
+            `<div class="w-8 h-8 bg-gradient-to-br from-[#FF6D75] to-[#E85560] rounded-full flex items-center justify-center">
+              <span class="text-white text-xs font-medium">${message.user_name.charAt(0).toUpperCase()}</span>
+            </div>`
+          }
+        </div>
+        <div class="flex-1">
+          <div class="flex items-baseline gap-2 mb-0.5">
+            <span class="text-sm font-semibold text-slate-900">${message.user_name}</span>
+            <span class="text-xs text-slate-500">${time}</span>
+          </div>
+          <p class="text-sm text-slate-700">${message.body_html || message.body}</p>
+        </div>
+      </div>
+    `;
+  } else {
+    // Grouped message - only show message body and time on hover
+    return `
+      <div class="flex gap-3 px-2 py-0.5 hover:bg-slate-50 rounded group thread-message" data-user-name="${message.user_name}" data-created-at="${message.created_at}">
+        <div class="flex-shrink-0 w-8"></div>
+        <div class="flex-1">
+          <div class="flex items-start gap-2">
+            <p class="text-sm text-slate-700 flex-1">${message.body_html || message.body}</p>
+            <span class="text-xs text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">${time}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function closeThread() {
+  document.getElementById('threadPanel').classList.add('hidden');
+  document.body.style.overflow = 'auto';
+  currentThreadMessageId = null;
+}
+
+// Helper function to get the last message in thread
+function getLastThreadMessage() {
+  const threadContainer = document.getElementById('threadMessages');
+  const messages = threadContainer.querySelectorAll('.thread-message');
+  if (messages.length === 0) return null;
+  
+  const lastMessage = messages[messages.length - 1];
+  return {
+    user_name: lastMessage.dataset.userName,
+    created_at: lastMessage.dataset.createdAt
+  };
+}
+
+// Add a new message to thread with grouping
+function addThreadMessage(message) {
+  const threadContainer = document.getElementById('threadMessages');
+  const lastMessage = getLastThreadMessage();
+  const messageHtml = formatThreadMessage(message, lastMessage);
+  threadContainer.insertAdjacentHTML('beforeend', messageHtml);
+}
+
+let isThreadSubmitting = false;
+
+function handleThreadKeyPress(event) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    
+    // Prevent duplicate submissions
+    if (isThreadSubmitting) return;
+    
+    const textarea = event.target;
+    if (!textarea.value.trim()) return;
+    
+    sendThreadReply(event);
+  }
+}
+
+async function sendThreadReply(event) {
+  event.preventDefault();
+  console.log('Sending thread reply, currentThreadMessageId:', currentThreadMessageId);
+  
+  // Prevent duplicate submissions
+  if (isThreadSubmitting) {
+    console.log('Already submitting thread reply');
+    return;
+  }
+  
+  if (!currentThreadMessageId) {
+    console.error('No thread message ID set');
+    return;
+  }
+  
+  const form = event.target.closest('form') || event.target;
+  const textarea = form.querySelector('textarea[name="reply_body"]');
+  const body = textarea.value.trim();
+  
+  console.log('Reply body:', body);
+  
+  if (!body) {
+    console.log('Empty reply body');
+    return;
+  }
+  
+  // Set submitting flag
+  isThreadSubmitting = true;
+  
+  try {
+    const channelId = <%= @current_channel&.id || 'null' %>;
+    if (!channelId) {
+      showToast('채널을 찾을 수 없습니다');
+      return;
+    }
+    
+    const csrfToken = document.querySelector("[name='csrf-token']").content;
+    const requestBody = { 
+      message: { 
+        body: body, 
+        parent_message_id: currentThreadMessageId 
+      } 
+    };
+    
+    console.log('Channel ID:', channelId);
+    console.log('CSRF Token:', csrfToken);
+    console.log('Request body:', requestBody);
+    console.log('Request URL:', `/channels/${channelId}/messages`);
+    
+    const response = await fetch(`/channels/${channelId}/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken,
+        'Accept': 'text/vnd.turbo-stream.html, application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+    
+    console.log('Response status:', response.status);
+    
+    if (response.ok) {
+      textarea.value = '';
+      // Handle Turbo Stream response
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('text/vnd.turbo-stream.html')) {
+        const text = await response.text();
+        console.log('[Thread Reply] Turbo Stream response:', text);
+        
+        // Process the Turbo Stream manually instead of using renderStreamMessage
+        const temp = document.createElement('div');
+        temp.innerHTML = text;
+        
+        const turboStreamElements = temp.querySelectorAll('turbo-stream');
+        turboStreamElements.forEach(streamElement => {
+          const action = streamElement.getAttribute('action');
+          const target = streamElement.getAttribute('target');
+          
+          // Skip form replacement to maintain focus
+          if (action === 'replace' && target === 'new_message') {
+            console.log('[Chat] Skipping form replacement to maintain focus');
+            return;
+          }
+          
+          if (action === 'append') {
+            const targetElement = document.getElementById(target);
+            if (targetElement) {
+              const template = streamElement.querySelector('template');
+              if (template) {
+                targetElement.insertAdjacentHTML('beforeend', template.innerHTML);
+              }
+            }
+          } else if (action === 'replace') {
+            const targetElement = document.getElementById(target);
+            if (targetElement) {
+              const template = streamElement.querySelector('template');
+              if (template) {
+                targetElement.outerHTML = template.innerHTML;
+              }
+            }
+          } else if (action === 'remove') {
+            const targetElement = document.getElementById(target);
+            if (targetElement) {
+              targetElement.remove();
+            }
+          }
+        });
+      }
+      
+      // Reload thread to show new message
+      setTimeout(() => {
+        showThread(currentThreadMessageId);
+      }, 200);
+      
+      // Don't reload the entire page to maintain state
+      // Just update the thread reply count
+      const messageEl = document.getElementById(`message-${currentThreadMessageId}`);
+      if (messageEl) {
+        const replyCountEl = messageEl.querySelector('.text-purple-600');
+        if (replyCountEl) {
+          const currentCount = parseInt(replyCountEl.textContent.match(/\d+/)?.[0] || '0');
+          replyCountEl.textContent = `${currentCount + 1}개의 답글`;
+        }
+      }
+    } else {
+      console.error('Failed to send reply, status:', response.status);
+      let errorMessage = '답글 전송에 실패했습니다';
+      try {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.errors && errorJson.errors.length > 0) {
+          errorMessage = errorJson.errors.join(', ');
+        }
+      } catch (e) {
+        // If not JSON, use default message
+      }
+      showToast(errorMessage);
+    }
+  } catch (error) {
+    console.error("Error sending thread reply:", error);
+    showToast('답글 전송 중 오류가 발생했습니다');
+  } finally {
+    // Reset submitting flag
+    setTimeout(() => {
+      isThreadSubmitting = false;
+    }, 1000);
+  }
+}
+
+// Auto-adjust textarea height
+function adjustTextareaHeight(textarea) {
+  // Reset height to auto to get the correct scrollHeight
+  textarea.style.height = 'auto';
+  
+  // Calculate new height
+  const scrollHeight = textarea.scrollHeight;
+  const minHeight = 24;
+  const maxHeight = 120;
+  
+  // Set new height within bounds
+  const newHeight = Math.min(Math.max(scrollHeight, minHeight), maxHeight);
+  textarea.style.height = newHeight + 'px';
+  
+  // Add scrollbar if content exceeds max height
+  if (scrollHeight > maxHeight) {
+    textarea.style.overflowY = 'auto';
+  } else {
+    textarea.style.overflowY = 'hidden';
+  }
+}
+
+// Mention autocomplete functionality
+let mentionDropdown = null;
+let mentionQuery = '';
+let mentionStartIndex = -1;
+let selectedMentionIndex = 0;
+let mentionUsers = [];
+
+function handleMessageInput(event, textarea) {
+  const cursorPosition = textarea.selectionStart;
+  const textBeforeCursor = textarea.value.substring(0, cursorPosition);
+  const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+  
+  if (lastAtIndex !== -1 && lastAtIndex === textBeforeCursor.length - 1) {
+    // Just typed @
+    mentionStartIndex = lastAtIndex;
+    mentionQuery = '';
+    showMentionDropdown(textarea);
+    searchMentionUsers('');
+  } else if (lastAtIndex !== -1 && mentionStartIndex !== -1) {
+    // Check if we're still in a mention
+    const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1);
+    const hasSpace = textAfterAt.includes(' ');
+    
+    // Updated regex to support Korean characters
+    const mentionPattern = /^[가-힣a-zA-Z0-9_]+$/;
+    
+    if (!hasSpace && textAfterAt.length > 0 && mentionPattern.test(textAfterAt)) {
+      mentionQuery = textAfterAt;
+      searchMentionUsers(mentionQuery);
+    } else {
+      hideMentionDropdown();
+    }
+  } else {
+    hideMentionDropdown();
+  }
+  
+  // Also call the original height adjustment function
+  adjustTextareaHeight(textarea);
+}
+
+async function searchMentionUsers(query) {
+  const channelId = document.getElementById('message_body').dataset.channelId;
+  
+  try {
+    const response = await fetch(`/channels/${channelId}/mentionable_users?query=${encodeURIComponent(query)}`, {
+      headers: {
+        'Accept': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      mentionUsers = data.users;
+      renderMentionDropdown(mentionUsers);
+    }
+  } catch (error) {
+    console.error('Error searching users:', error);
+  }
+}
+
+function renderMentionDropdown(users) {
+  const dropdown = document.getElementById('mentionDropdown');
+  const content = document.getElementById('mentionDropdownContent');
+  
+  if (users.length === 0) {
+    hideMentionDropdown();
+    return;
+  }
+  
+  content.innerHTML = users.map((user, index) => `
+    <button type="button"
+            class="w-full px-3 py-2 flex items-center gap-2 hover:bg-slate-100 ${index === selectedMentionIndex ? 'bg-slate-100' : ''}"
+            onclick="selectMention('${user.name}', ${user.id})"
+            data-mention-index="${index}">
+      ${user.avatar_url ? 
+        `<img src="${user.avatar_url}" alt="${user.name}" class="w-6 h-6 rounded-full">` :
+        `<div class="w-6 h-6 rounded-full bg-[#FF6D75] flex items-center justify-center text-white text-xs font-medium">
+          ${user.name.charAt(0).toUpperCase()}
+        </div>`
+      }
+      <span class="text-sm text-slate-900">${user.name}</span>
+    </button>
+  `).join('');
+  
+  dropdown.classList.remove('hidden');
+}
+
+function showMentionDropdown(textarea) {
+  const dropdown = document.getElementById('mentionDropdown');
+  mentionDropdown = dropdown;
+  selectedMentionIndex = 0;
+}
+
+function hideMentionDropdown() {
+  const dropdown = document.getElementById('mentionDropdown');
+  dropdown.classList.add('hidden');
+  mentionStartIndex = -1;
+  mentionQuery = '';
+  selectedMentionIndex = 0;
+  mentionUsers = [];
+}
+
+function selectMention(userName, userId) {
+  const textarea = document.getElementById('message_body');
+  const cursorPosition = textarea.selectionStart;
+  const textBeforeMention = textarea.value.substring(0, mentionStartIndex);
+  const textAfterCursor = textarea.value.substring(cursorPosition);
+  
+  textarea.value = textBeforeMention + '@' + userName + ' ' + textAfterCursor;
+  
+  // Set cursor position after the mention
+  const newCursorPosition = mentionStartIndex + userName.length + 2;
+  textarea.setSelectionRange(newCursorPosition, newCursorPosition);
+  textarea.focus();
+  
+  hideMentionDropdown();
+  adjustTextareaHeight(textarea);
+}
+
+// Handle message input keypress
+let isSubmitting = false;
+
+function handleMessageKeyPress(event, textarea) {
+  // Handle mention dropdown navigation
+  if (!document.getElementById('mentionDropdown').classList.contains('hidden')) {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      selectedMentionIndex = Math.min(selectedMentionIndex + 1, mentionUsers.length - 1);
+      renderMentionDropdown(mentionUsers);
+      return;
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      selectedMentionIndex = Math.max(selectedMentionIndex - 1, 0);
+      renderMentionDropdown(mentionUsers);
+      return;
+    } else if (event.key === 'Enter' || event.key === 'Tab') {
+      event.preventDefault();
+      if (mentionUsers[selectedMentionIndex]) {
+        selectMention(mentionUsers[selectedMentionIndex].name, mentionUsers[selectedMentionIndex].id);
+      }
+      return;
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      hideMentionDropdown();
+      return;
+    }
+  }
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    
+    // Prevent duplicate submissions
+    if (isSubmitting) return;
+    
+    const form = textarea.closest('form');
+    
+    // Check if message is empty
+    if (!textarea.value.trim()) return;
+    
+    // Send message asynchronously
+    sendMessage(form, textarea);
+  } else if (event.key === 'Escape') {
+    // Cancel reply on Escape key
+    cancelReply();
+  }
+}
+
+// Send message asynchronously (like thread)
+async function sendMessage(eventOrForm, textarea) {
+  // Handle both event and form parameters
+  let form;
+  if (eventOrForm.preventDefault) {
+    // It's an event
+    eventOrForm.preventDefault();
+    form = eventOrForm.target;
+    textarea = form.querySelector('#message_body');
+  } else {
+    // It's a form element
+    form = eventOrForm;
+  }
+  const body = textarea.value.trim();
+  
+  // Check if we have content (either text, files, or note)
+  if (!body && selectedFiles.length === 0 && !selectedNote) return;
+  
+  // Set submitting flag
+  isSubmitting = true;
+  
+  // Save current scroll position
+  const messagesContainer = document.getElementById('messagesContainer');
+  const scrollPosition = messagesContainer ? messagesContainer.scrollTop : 0;
+  const parentMessageId = document.getElementById('parent_message_id')?.value;
+  
+  try {
+    const channelId = <%= @current_channel&.id || 'null' %>;
+    if (!channelId) {
+      console.error('No channel selected');
+      return;
+    }
+    
+    const csrfToken = document.querySelector("[name='csrf-token']").content;
+    
+    // Use FormData for file uploads
+    const formData = new FormData();
+    formData.append('message[body]', body);
+    
+    if (parentMessageId) {
+      formData.append('message[parent_message_id]', parentMessageId);
+    }
+    
+    // Add files
+    selectedFiles.forEach(file => {
+      formData.append('message[attachments][]', file);
+    });
+    
+    // Add note if selected
+    if (selectedNote) {
+      formData.append('message[note_id]', selectedNote.id);
+    }
+    
+    const response = await fetch(`/channels/${channelId}/messages`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': csrfToken,
+        'Accept': 'text/vnd.turbo-stream.html, application/json'
+      },
+      body: formData
+    });
+    
+    if (response.ok) {
+      console.log('[Chat] Response OK, clearing textarea and focusing');
+      // Clear textarea immediately after successful send
+      textarea.value = '';
+      
+      // Clear reply state
+      console.log('[Chat] Calling cancelReply()');
+      cancelReply();
+      
+      // Clear files
+      selectedFiles = [];
+      document.getElementById('file-preview-container').innerHTML = '';
+      document.getElementById('file-preview-area').classList.add('hidden');
+      
+      // Clear note
+      if (selectedNote) {
+        removeNote();
+      }
+      
+      // Reset textarea height
+      textarea.style.height = 'auto';
+      adjustTextareaHeight(textarea);
+      
+      // Maintain focus
+      setTimeout(() => {
+        console.log('[Chat] Setting focus back to textarea');
+        textarea.focus();
+      }, 50);
+      
+      // Handle Turbo Stream response
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('text/vnd.turbo-stream.html')) {
+        const text = await response.text();
+        // Process Turbo Stream manually
+        const temp = document.createElement('div');
+        temp.innerHTML = text;
+        
+        const turboStreamElements = temp.querySelectorAll('turbo-stream');
+        turboStreamElements.forEach(streamElement => {
+          const action = streamElement.getAttribute('action');
+          const target = streamElement.getAttribute('target');
+          
+          // Skip form replacement to maintain focus
+          if (action === 'replace' && target === 'new_message') {
+            console.log('[Chat] Skipping form replacement to maintain focus');
+            return;
+          }
+          
+          if (action === 'append') {
+            const targetElement = document.getElementById(target);
+            if (targetElement) {
+              const template = streamElement.querySelector('template');
+              if (template) {
+                targetElement.insertAdjacentHTML('beforeend', template.innerHTML);
+              }
+            }
+          } else if (action === 'replace') {
+            const targetElement = document.getElementById(target);
+            if (targetElement) {
+              const template = streamElement.querySelector('template');
+              if (template) {
+                targetElement.outerHTML = template.innerHTML;
+              }
+            }
+          } else if (action === 'remove') {
+            const targetElement = document.getElementById(target);
+            if (targetElement) {
+              targetElement.remove();
+            }
+          }
+        });
+      }
+      
+      // Scroll handling based on whether it's a reply or new message
+      setTimeout(() => {
+        const messagesContainer = document.getElementById('messagesContainer');
+        if (messagesContainer) {
+          if (parentMessageId) {
+            // For replies, scroll to the parent message area
+            const parentMessage = document.getElementById(`message-${parentMessageId}`);
+            if (parentMessage) {
+              // Find the thread replies container
+              const threadReplies = document.getElementById(`thread-replies-${parentMessageId}`);
+              if (threadReplies) {
+                // Scroll to show the thread area
+                const parentTop = parentMessage.offsetTop;
+                const threadBottom = threadReplies.offsetTop + threadReplies.offsetHeight;
+                const containerHeight = messagesContainer.offsetHeight;
+                
+                // Calculate optimal scroll position to show both parent and replies
+                const scrollTo = Math.max(0, threadBottom - containerHeight + 100);
+                messagesContainer.scrollTop = scrollTo;
+              } else {
+                // If no thread container yet, just scroll to parent
+                parentMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            } else {
+              // Fallback to saved position
+              messagesContainer.scrollTop = scrollPosition;
+            }
+          } else {
+            // For new messages, scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          }
+        }
+      }, 150);
+    } else {
+      console.error('Failed to send message');
+      showToast('메시지 전송에 실패했습니다');
+    }
+  } catch (error) {
+    console.error('Error sending message:', error);
+    showToast('메시지 전송 중 오류가 발생했습니다');
+  } finally {
+    // Reset submitting flag
+    setTimeout(() => {
+      isSubmitting = false;
+    }, 500);
+  }
+}
+
+// Cancel reply
+function cancelReply() {
+  // Find the message input field (could be input or textarea)
+  const messageInput = document.querySelector('textarea[name="message[body]"]') || document.querySelector('input[name="message[body]"]');
+  const parentMessageIdField = document.getElementById('parent_message_id');
+  
+  if (messageInput) {
+    delete messageInput.dataset.replyToId;
+  }
+  
+  if (parentMessageIdField) {
+    parentMessageIdField.value = '';
+  }
+  
+  const indicator = document.getElementById('replyIndicator');
+  if (indicator) {
+    indicator.remove();
+  }
+}
+
+// File handling variables
+let selectedFiles = [];
+let selectedNote = null;
+
+function handleAttachment() {
+  document.getElementById('file-input').click();
+}
+
+function handleNoteAttachment() {
+  toggleNoteModal();
+}
+
+function handleFileSelection(event) {
+  const files = Array.from(event.target.files);
+  if (files.length === 0) return;
+  
+  // Allowed file extensions
+  const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mpeg', 'mov', 'qt', 'avi', 'wmv', 'webm', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'rar'];
+  
+  files.forEach(file => {
+    // Check file size (10MB for general files, 50MB for videos)
+    const isVideo = ['mp4', 'mpeg', 'mov', 'qt', 'avi', 'wmv', 'webm'].includes(file.name.split('.').pop().toLowerCase());
+    const maxSize = isVideo ? 50 * 1024 * 1024 : 25 * 1024 * 1024;
+    const maxSizeMB = isVideo ? 50 : 25;
+    
+    if (file.size > maxSize) {
+      showToast(`파일 "${file.name}"이 너무 큽니다. ${maxSizeMB}MB 이하만 가능합니다.`);
+      return;
+    }
+    
+    // Check file extension
+    const extension = file.name.split('.').pop().toLowerCase();
+    if (!allowedExtensions.includes(extension)) {
+      showToast(`파일 "${file.name}"은 허용되지 않는 형식입니다.`);
+      return;
+    }
+    
+    selectedFiles.push(file);
+    addFilePreview(file);
+  });
+  
+  // Clear the input
+  event.target.value = '';
+  
+  // Show preview area
+  if (selectedFiles.length > 0) {
+    document.getElementById('file-preview-area').classList.remove('hidden');
+  }
+}
+
+function addFilePreview(file) {
+  const container = document.getElementById('file-preview-container');
+  const preview = document.createElement('div');
+  preview.className = 'relative group';
+  preview.dataset.fileName = file.name;
+  
+  const isImage = file.type.startsWith('image/');
+  const isVideo = file.type.startsWith('video/');
+  
+  if (isImage) {
+    // Image preview
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      preview.innerHTML = `
+        <div class="relative w-20 h-20 rounded-lg overflow-hidden border border-slate-200">
+          <img src="${e.target.result}" alt="${file.name}" class="w-full h-full object-cover">
+          <button type="button" onclick="removeFile('${file.name}')" 
+                  class="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-bl opacity-0 group-hover:opacity-100 transition-opacity">
+            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      `;
+    };
+    reader.readAsDataURL(file);
+  } else if (isVideo) {
+    // Video preview
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      preview.innerHTML = `
+        <div class="relative w-20 h-20 rounded-lg overflow-hidden border border-slate-200 bg-slate-900">
+          <video src="${e.target.result}" class="w-full h-full object-cover">
+          </video>
+          <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div class="bg-white bg-opacity-90 rounded-full p-2">
+              <svg class="w-6 h-6 text-slate-700" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </div>
+          </div>
+          <button type="button" onclick="removeFile('${file.name}')" 
+                  class="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-bl opacity-0 group-hover:opacity-100 transition-opacity">
+            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      `;
+    };
+    reader.readAsDataURL(file);
+  } else {
+    // File preview with icon
+    const extension = file.name.split('.').pop().toLowerCase();
+    const icon = getFileIcon(extension);
+    
+    preview.innerHTML = `
+      <div class="relative flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg">
+        <span class="text-2xl">${icon}</span>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-slate-700 truncate">${file.name}</p>
+          <p class="text-xs text-slate-500">${formatFileSize(file.size)}</p>
+        </div>
+        <button type="button" onclick="removeFile('${file.name}')" 
+                class="p-1 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    `;
+  }
+  
+  container.appendChild(preview);
+}
+
+function removeFile(fileName) {
+  selectedFiles = selectedFiles.filter(f => f.name !== fileName);
+  
+  // Remove preview
+  const preview = document.querySelector(`[data-file-name="${fileName}"]`);
+  if (preview) preview.remove();
+  
+  // Hide preview area if no files
+  if (selectedFiles.length === 0) {
+    document.getElementById('file-preview-area').classList.add('hidden');
+  }
+}
+
+function getFileIcon(extension) {
+  const icons = {
+    pdf: '📄',
+    doc: '📝', docx: '📝',
+    xls: '📊', xlsx: '📊',
+    ppt: '📊', pptx: '📊',
+    zip: '🗜️', rar: '🗜️',
+    txt: '📃',
+    default: '📎'
+  };
+  return icons[extension] || icons.default;
+}
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Note functions
+function toggleNoteModal() {
+  const modal = document.getElementById('noteModal');
+  const isHidden = modal.classList.contains('hidden');
+  
+  if (isHidden) {
+    modal.classList.remove('hidden');
+    // Load notes if needed
+  } else {
+    modal.classList.add('hidden');
+  }
+}
+
+function searchNotes(searchTerm) {
+  const noteItems = document.querySelectorAll('.note-item');
+  const term = searchTerm.toLowerCase();
+  
+  noteItems.forEach(item => {
+    const title = item.dataset.title;
+    if (title.includes(term)) {
+      item.style.display = 'block';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+}
+
+function selectNote(noteId, title, category, status) {
+  selectedNote = { id: noteId, title: title, category: category, status: status };
+  
+  // Show preview
+  showNotePreview();
+  
+  // Close modal
+  toggleNoteModal();
+}
+
+function showNotePreview() {
+  if (!selectedNote) return;
+  
+  const container = document.getElementById('note-preview-container');
+  container.innerHTML = `
+    <div class="relative flex items-center gap-3 p-3 bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-lg">
+      <div class="flex-shrink-0">
+        <svg class="w-8 h-8 text-[#FF6D75]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <h4 class="font-medium text-slate-900 truncate">${selectedNote.title}</h4>
+        <div class="flex items-center gap-2 mt-1">
+          <span class="text-xs text-slate-500">${selectedNote.category}</span>
+          <span class="text-xs text-slate-500">•</span>
+          <span class="text-xs text-slate-500">${selectedNote.status}</span>
+        </div>
+      </div>
+      <button type="button" onclick="removeNote()" 
+              class="p-1 text-red-500 hover:bg-red-50 rounded">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  `;
+  
+  // Update hidden input
+  document.getElementById('note_id').value = selectedNote.id;
+  
+  // Show preview area
+  document.getElementById('note-preview-area').classList.remove('hidden');
+}
+
+function removeNote() {
+  selectedNote = null;
+  document.getElementById('note_id').value = '';
+  document.getElementById('note-preview-container').innerHTML = '';
+  document.getElementById('note-preview-area').classList.add('hidden');
+}
+
+// Image modal
+function showImageModal(url, filename) {
+  // Create modal if it doesn't exist
+  let modal = document.getElementById('image-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'image-modal';
+    modal.className = 'fixed inset-0 z-50 hidden flex items-center justify-center bg-black bg-opacity-75';
+    modal.onclick = function(e) {
+      if (e.target === modal) closeImageModal();
+    };
+    
+    modal.innerHTML = `
+      <div class="relative max-w-7xl max-h-[90vh] mx-4">
+        <button onclick="closeImageModal()" class="absolute -top-10 right-0 text-white hover:text-gray-300">
+          <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        <img id="modal-image" src="" alt="" class="max-w-full max-h-[90vh] object-contain">
+        <div id="modal-filename" class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 text-center text-sm"></div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+  
+  // Set image and show modal
+  document.getElementById('modal-image').src = url;
+  document.getElementById('modal-filename').textContent = filename;
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  
+  // Add ESC key listener
+  document.addEventListener('keydown', handleImageModalEsc);
+}
+
+function handleImageModalEsc(e) {
+  if (e.key === 'Escape') {
+    closeImageModal();
+  }
+}
+
+function closeImageModal() {
+  const modal = document.getElementById('image-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+    // Remove ESC key listener
+    document.removeEventListener('keydown', handleImageModalEsc);
+  }
+}
+// No need for additional event listener since form has onsubmit
+</script>
+
+<style>
+/* Thread replies animation */
+.thread-replies {
+  transition: opacity 0.2s ease-in-out;
+}
+
+.thread-replies.hidden {
+  display: none;
+}
+
+/* Prevent action buttons from showing on media hover */
+.group:hover .group-hover\:opacity-100 {
+  opacity: 0;
+}
+
+/* Show action buttons only when hovering over message text area */
+.group:hover .flex-1:hover ~ .group-hover\:opacity-100,
+.group:hover .group-hover\:opacity-100:hover {
+  opacity: 1;
+}
+
+/* Smooth chevron rotation */
+span[id^="thread-chevron-"] {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+/* Message textarea styling */
+#message_body {
+  line-height: 1.5;
+  overflow-y: hidden;
+  transition: height 0.1s ease;
+}
+
+#message_body::-webkit-scrollbar {
+  width: 4px;
+}
+
+#message_body::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+#message_body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 2px;
+}
+</style>
+
+<script>
+// Client-side image thumbnail generation with caching
+const thumbnailCache = new Map();
+
+function generateThumbnail(imgUrl, targetWidth, targetHeight) {
+  return new Promise((resolve, reject) => {
+    // Check cache first
+    const cacheKey = `${imgUrl}_${targetWidth}_${targetHeight}`;
+    if (thumbnailCache.has(cacheKey)) {
+      resolve(thumbnailCache.get(cacheKey));
+      return;
+    }
+    
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Calculate dimensions to maintain aspect ratio
+      let width = targetWidth;
+      let height = targetHeight;
+      const aspectRatio = img.width / img.height;
+      
+      if (img.width > img.height) {
+        height = targetWidth / aspectRatio;
+      } else {
+        width = targetHeight * aspectRatio;
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      
+      // Enable image smoothing for better quality
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
+      // Draw the image
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Convert to data URL with compression
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      
+      // Cache the result
+      thumbnailCache.set(cacheKey, dataUrl);
+      
+      resolve(dataUrl);
+    };
+    
+    img.onerror = function() {
+      reject(new Error('Failed to load image'));
+    };
+    
+    img.src = imgUrl;
+  });
+}
+
+// Image lazy loading with thumbnail generation
+(function() {
+  // Set up Intersection Observer for better image loading
+  if ('IntersectionObserver' in window) {
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          const originalSrc = img.dataset.src;
+          
+          if (originalSrc && img.classList.contains('lazy-image')) {
+            // Show loading state
+            const loadingDiv = img.previousElementSibling;
+            
+            // Generate thumbnail
+            generateThumbnail(originalSrc, 300, 300)
+              .then(thumbnailUrl => {
+                img.src = thumbnailUrl;
+                img.style.opacity = '1';
+                if (loadingDiv) loadingDiv.style.display = 'none';
+                
+                // Preload full image in background
+                const fullImg = new Image();
+                fullImg.src = originalSrc;
+              })
+              .catch(error => {
+                console.error('Thumbnail generation failed:', error);
+                // Fallback to original image
+                img.src = originalSrc;
+                img.style.opacity = '1';
+                if (loadingDiv) loadingDiv.style.display = 'none';
+              });
+            
+            img.removeAttribute('data-src');
+            observer.unobserve(img);
+          }
+        }
+      });
+    }, {
+      rootMargin: '50px 0px', // Start loading 50px before visible
+      threshold: 0.01
+    });
+    
+    // Observe all lazy images
+    document.addEventListener('turbo:load', () => {
+      document.querySelectorAll('.lazy-image').forEach(img => {
+        imageObserver.observe(img);
+      });
+    });
+  }
+})();
+
+// Ensure scroll to bottom when page loads
+(function() {
+  function scrollToBottom() {
+    const messagesContainer = document.getElementById('messagesContainer');
+    if (messagesContainer) {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+  }
+  
+  // Clean up any existing reply indicators on page load
+  function cleanupReplyIndicators() {
+    const replyIndicator = document.getElementById('replyIndicator');
+    if (replyIndicator) {
+      replyIndicator.remove();
+    }
+    
+    const parentMessageIdField = document.getElementById('parent_message_id');
+    if (parentMessageIdField) {
+      parentMessageIdField.value = '';
+    }
+    
+    const messageInput = document.querySelector('textarea[name="message[body]"]') || document.querySelector('input[name="message[body]"]');
+    if (messageInput && messageInput.dataset.replyToId) {
+      delete messageInput.dataset.replyToId;
+    }
+  }
+  
+  // Initialize
+  cleanupReplyIndicators();
+  
+  // Try multiple times to ensure it works
+  setTimeout(scrollToBottom, 0);
+  setTimeout(scrollToBottom, 100);
+  setTimeout(scrollToBottom, 300);
+  
+  // Add click event listeners to mentions
+  document.addEventListener('click', function(event) {
+    if (event.target.classList.contains('mention')) {
+      const userId = event.target.dataset.userId;
+      if (userId) {
+        // Navigate to user profile
+        window.location.href = `/profile/${userId}`;
+      }
+    }
+  });
+})();
+</script>
+
+<!-- Share Channel Selection Modal -->
+<div id="shareChannelModal" class="fixed inset-0 hidden z-50 flex items-center justify-center transition-opacity duration-200" style="background-color: rgba(0, 0, 0, 0.2);" onclick="if(event.target === this) closeShareModal()">
+  <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 transform transition-all duration-200 scale-95 opacity-0" id="shareChannelModalContent">
+    <div class="border-b border-slate-200 px-6 py-4">
+      <h3 class="text-lg font-semibold text-slate-900">메시지 공유</h3>
+      <p class="text-sm text-slate-500 mt-1">공유할 채널을 선택하세요</p>
+    </div>
+    
+    <div class="p-6">
+      <!-- Channel Search -->
+      <div class="mb-4">
+        <input type="text" 
+               placeholder="채널 검색..." 
+               class="w-full px-3 py-2 border border-slate-200 rounded-md text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75]"
+               onkeyup="filterShareChannels(this.value)">
+      </div>
+      
+      <!-- Channel List -->
+      <div class="max-h-80 overflow-y-auto border border-slate-200 rounded-md">
+        <div class="p-2" id="shareChannelsList">
+          <!-- Channels will be populated here -->
+        </div>
+      </div>
+      
+      <!-- Selected Channel Preview -->
+      <div id="selectedChannelPreview" class="mt-4 p-3 bg-slate-50 rounded-md hidden">
+        <p class="text-sm text-slate-600">선택된 채널: <span id="selectedChannelName" class="font-medium text-[#FF6D75]"></span></p>
+      </div>
+    </div>
+    
+    <div class="flex justify-end gap-2 px-6 pb-6">
+      <button type="button" 
+              onclick="closeShareModal()" 
+              class="px-4 py-2 border border-slate-200 rounded-md text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors">
+        취소
+      </button>
+      <button type="button" 
+              onclick="confirmShareMessage()"
+              class="px-4 py-2 bg-[#FF6D75] text-white rounded-md hover:bg-[#E85560] text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              id="shareConfirmButton"
+              disabled>
+        공유
+      </button>
+    </div>
+  </div>
+</div>

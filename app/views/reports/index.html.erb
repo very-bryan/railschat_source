@@ -1,0 +1,229 @@
+<% content_for :page_title, "보고서" %>
+
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <p class="text-sm text-slate-500">업무 성과와 생산성을 분석합니다</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <%= form_with url: reports_path, method: :get, local: true, class: "flex items-center gap-2" do |form| %>
+        <%= form.select :date_range, 
+            options_for_select([
+              ['최근 7일', '7'],
+              ['최근 30일', '30'],
+              ['최근 90일', '90'],
+              ['최근 1년', '365']
+            ], @date_range),
+            {},
+            { class: "px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75]" } %>
+        <%= form.submit "필터 적용", class: "px-4 py-2 bg-[#FF6D75] text-white rounded-md hover:bg-[#E85560] focus:outline-none focus:ring-2 focus:ring-[#FF6D75] text-sm font-medium" %>
+      <% end %>
+      <%= link_to reports_analytics_path, class: "inline-flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-md text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#FF6D75]" do %>
+        <%= icon "chart-line", library: "tabler", class: "w-4 h-4" %>
+        고급 분석
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Key Metrics -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white rounded-xl p-6 border border-slate-100 hover:shadow-md transition-all">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-slate-600 font-medium">총 노트 수</p>
+        <div class="p-2 bg-[#FFF0F1] rounded-lg">
+          <%= icon "file-text", library: "tabler", class: "w-5 h-5 text-[#FF6D75]" %>
+        </div>
+      </div>
+      <div class="space-y-1">
+        <h3 class="text-2xl font-bold text-slate-900"><%= @total_notes %></h3>
+        <p class="text-xs text-slate-500">최근 <%= @date_range %>일간: <%= @notes_in_range %>개</p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl p-6 border border-slate-100 hover:shadow-md transition-all">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-slate-600 font-medium">완료율</p>
+        <div class="p-2 bg-emerald-50 rounded-lg">
+          <%= icon "circle-check", library: "tabler", class: "w-5 h-5 text-emerald-600" %>
+        </div>
+      </div>
+      <div class="space-y-1">
+        <h3 class="text-2xl font-bold text-emerald-600"><%= @completion_rate %>%</h3>
+        <p class="text-xs text-slate-500">완료된 노트: <%= @completed_notes %>개</p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl p-6 border border-slate-100 hover:shadow-md transition-all">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-slate-600 font-medium">평균 완료 시간</p>
+        <div class="p-2 bg-amber-50 rounded-lg">
+          <%= icon "clock", library: "tabler", class: "w-5 h-5 text-amber-600" %>
+        </div>
+      </div>
+      <div class="space-y-1">
+        <h3 class="text-2xl font-bold text-amber-600"><%= @avg_completion_time %>일</h3>
+        <p class="text-xs text-slate-500">작업 완료까지 소요 시간</p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl p-6 border border-slate-100 hover:shadow-md transition-all">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-slate-600 font-medium">지연된 작업</p>
+        <div class="p-2 bg-red-50 rounded-lg">
+          <%= icon "alert-circle", library: "tabler", class: "w-5 h-5 text-red-600" %>
+        </div>
+      </div>
+      <div class="space-y-1">
+        <h3 class="text-2xl font-bold text-red-600"><%= @overdue_notes %></h3>
+        <p class="text-xs text-slate-500">마감일이 지난 미완료 작업</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Status Distribution -->
+    <div class="bg-white rounded-xl border border-slate-100 p-6">
+      <h3 class="text-base font-semibold text-slate-900 mb-4">상태별 분포</h3>
+      <div class="space-y-3">
+        <% @notes_by_status.each do |status, count| %>
+          <% status_obj = Status.find_by(name: status) %>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-full" style="background-color: <%= status_obj&.color || '#6b7280' %>"></div>
+              <span class="text-sm font-medium text-slate-700"><%= status %></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-slate-600"><%= count %>개</span>
+              <div class="w-20 bg-slate-100 rounded-full h-2">
+                <div class="h-2 rounded-full transition-all duration-300" 
+                     style="width: <%= @total_notes > 0 ? (count.to_f / @total_notes * 100).round(1) : 0 %>%; background-color: <%= status_obj&.color || '#6b7280' %>"></div>
+              </div>
+              <span class="text-xs text-slate-500 min-w-[35px]"><%= @total_notes > 0 ? (count.to_f / @total_notes * 100).round(1) : 0 %>%</span>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Category Distribution -->
+    <div class="bg-white rounded-xl border border-slate-100 p-6">
+      <h3 class="text-base font-semibold text-slate-900 mb-4">카테고리별 분포</h3>
+      <div class="space-y-3 max-h-64 overflow-y-auto">
+        <% @notes_by_category.sort_by { |_, count| -count }.first(10).each do |category, count| %>
+          <% category_obj = Category.find_by(name: category) %>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-full" style="background-color: <%= category_obj&.color || '#6b7280' %>"></div>
+              <span class="text-sm font-medium text-slate-700 truncate"><%= category %></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-slate-600"><%= count %>개</span>
+              <div class="w-16 bg-slate-100 rounded-full h-2">
+                <div class="h-2 rounded-full transition-all duration-300" 
+                     style="width: <%= @total_notes > 0 ? (count.to_f / @total_notes * 100).round(1) : 0 %>%; background-color: <%= category_obj&.color || '#6b7280' %>"></div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Activity Chart -->
+  <div class="bg-white rounded-xl border border-slate-100 p-6">
+    <h3 class="text-base font-semibold text-slate-900 mb-4">일별 활동 (최근 30일)</h3>
+    <div class="flex items-end gap-1 h-32">
+      <% (30.days.ago.to_date..Date.current).each do |date| %>
+        <% count = @daily_activity[date.to_s] || 0 %>
+        <% max_count = @daily_activity.values.max || 1 %>
+        <div class="flex-1 bg-[#FF6D75] bg-opacity-30 rounded-t hover:bg-[#FF6D75] hover:bg-opacity-40 cursor-pointer relative group transition-colors"
+             style="height: <%= count > 0 ? (count.to_f / max_count * 100).round(1) : 2 %>%"
+             title="<%= date.strftime('%m/%d') %>: <%= count %>개">
+          <div class="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+            <%= date.strftime('%m/%d') %>: <%= count %>개
+          </div>
+        </div>
+      <% end %>
+    </div>
+    <div class="mt-2 text-xs text-slate-500 text-center">
+      <%= 30.days.ago.strftime('%m/%d') %> ~ <%= Date.current.strftime('%m/%d') %>
+    </div>
+  </div>
+
+  <!-- Two Column Layout -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Upcoming Deadlines -->
+    <div class="bg-white rounded-xl border border-slate-100">
+      <div class="p-6 border-b border-slate-100">
+        <h3 class="text-base font-semibold text-slate-900">다가오는 마감일</h3>
+      </div>
+      <div class="p-6">
+      <% if @upcoming_deadlines.any? %>
+        <div class="space-y-3">
+          <% @upcoming_deadlines.each do |note| %>
+            <div class="flex items-center justify-between p-4 hover:bg-slate-50 rounded-lg transition-colors">
+              <div class="flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full" style="background-color: <%= note.category.color %>"></div>
+                <div>
+                  <%= link_to note.title, note_path(note), class: "text-sm font-medium text-slate-900 hover:text-[#FF6D75] transition-colors" %>
+                  <p class="text-xs text-slate-500"><%= note.category.name %></p>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="text-sm font-medium <%= note.due_date < Date.current ? 'text-red-600' : note.due_date <= Date.current + 1.day ? 'text-amber-600' : 'text-slate-600' %>">
+                  <%= note.due_date.strftime('%m/%d') %>
+                </p>
+                <p class="text-xs text-slate-500">
+                  <%= note.due_date < Date.current ? '지연됨' : "#{(note.due_date - Date.current).to_i}일 후" %>
+                </p>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="text-center py-8 text-slate-500">
+          <%= icon "calendar", library: "tabler", class: "w-12 h-12 text-slate-300 mx-auto mb-2" %>
+          <p class="text-sm">다가오는 마감일이 없습니다</p>
+        </div>
+      <% end %>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="bg-white rounded-xl border border-slate-100">
+      <div class="p-6 border-b border-slate-100">
+        <h3 class="text-base font-semibold text-slate-900">최근 활동</h3>
+      </div>
+      <div class="p-6">
+      <% if @recent_notes.any? %>
+        <div class="space-y-3">
+          <% @recent_notes.each do |note| %>
+            <div class="flex items-center gap-3 p-4 hover:bg-slate-50 rounded-lg transition-colors">
+              <div class="w-2 h-2 rounded-full" style="background-color: <%= note.category.color %>"></div>
+              <div class="flex-1">
+                <%= link_to note.title, note_path(note), class: "text-sm font-medium text-slate-900 hover:text-[#FF6D75] transition-colors" %>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium"
+                        style="background-color: <%= note.status.color %>15; color: <%= note.status.color %>;">
+                    <%= note.status.name %>
+                  </span>
+                  <span class="text-xs text-slate-500">
+                    <%= time_ago_in_words(note.created_at) %> 전
+                  </span>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="text-center py-8 text-slate-500">
+          <%= icon "clipboard-check", library: "tabler", class: "w-12 h-12 text-slate-300 mx-auto mb-2" %>
+          <p class="text-sm">최근 활동이 없습니다</p>
+        </div>
+      <% end %>
+      </div>
+    </div>
+  </div>
+</div>

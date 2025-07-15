@@ -1,0 +1,439 @@
+<% content_for :page_title, "설정" %>
+
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="mb-6">
+    <p class="text-sm text-slate-500">계정 정보와 환경설정을 관리합니다</p>
+  </div>
+
+  <!-- User Statistics -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="bg-white rounded-xl p-6 border border-slate-100 hover:shadow-md transition-all">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-slate-600 font-medium">총 노트</p>
+        <div class="p-2 bg-[#FFF0F1] rounded-lg">
+          <%= icon "file-text", library: "tabler", class: "w-5 h-5 text-[#FF6D75]" %>
+        </div>
+      </div>
+      <div class="space-y-1">
+        <h3 class="text-2xl font-bold text-slate-900"><%= @user_stats[:total_notes] %></h3>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl p-6 border border-slate-100 hover:shadow-md transition-all">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-slate-600 font-medium">완료 노트</p>
+        <div class="p-2 bg-emerald-50 rounded-lg">
+          <%= icon "circle-check", library: "tabler", class: "w-5 h-5 text-emerald-600" %>
+        </div>
+      </div>
+      <div class="space-y-1">
+        <h3 class="text-2xl font-bold text-slate-900"><%= @user_stats[:completed_notes] %></h3>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl p-6 border border-slate-100 hover:shadow-md transition-all">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-slate-600 font-medium">활성 채널</p>
+        <div class="p-2 bg-purple-50 rounded-lg">
+          <%= icon "message-circle", library: "tabler", class: "w-5 h-5 text-purple-600" %>
+        </div>
+      </div>
+      <div class="space-y-1">
+        <h3 class="text-2xl font-bold text-slate-900"><%= @user_stats[:active_channels] %></h3>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl p-6 border border-slate-100 hover:shadow-md transition-all">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-slate-600 font-medium">보낸 메시지</p>
+        <div class="p-2 bg-amber-50 rounded-lg">
+          <%= icon "send", library: "tabler", class: "w-5 h-5 text-amber-600" %>
+        </div>
+      </div>
+      <div class="space-y-1">
+        <h3 class="text-2xl font-bold text-slate-900"><%= @user_stats[:messages_sent] %></h3>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl p-6 border border-slate-100 hover:shadow-md transition-all">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-sm text-slate-600 font-medium">평균 완료 시간</p>
+        <div class="p-2 bg-yellow-50 rounded-lg">
+          <%= icon "clock", library: "tabler", class: "w-5 h-5 text-yellow-600" %>
+        </div>
+      </div>
+      <div class="space-y-1">
+        <h3 class="text-2xl font-bold text-slate-900"><%= @user_stats[:avg_completion_time] %>일</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Workspace Settings -->
+  <div class="bg-white rounded-xl border border-slate-100">
+    <div class="px-6 py-4 border-b border-slate-100">
+      <h3 class="text-base font-semibold text-slate-900">워크스페이스 설정</h3>
+    </div>
+    
+    <div class="p-6">
+      <%= form_with model: @workspace, url: update_workspace_settings_path, method: :patch, local: true, class: "space-y-6", data: { turbo: false } do |form| %>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Workspace Icon -->
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-2">워크스페이스 아이콘</label>
+            <div class="flex items-start gap-4">
+              <% if @workspace.icon.attached? %>
+                <%= image_tag @workspace.icon, class: "w-16 h-16 rounded-lg object-cover" %>
+              <% else %>
+                <div class="w-16 h-16 bg-gradient-to-br from-[#FF6D75] to-[#E85560] rounded-lg flex items-center justify-center">
+                  <span class="text-white font-bold text-xl">
+                    <%= @workspace.name.first.upcase %>
+                  </span>
+                </div>
+              <% end %>
+              
+              <div class="flex-1">
+                <%= form.file_field :icon, 
+                    accept: "image/*",
+                    class: "block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-[#FF6D75] file:text-white hover:file:bg-[#E85560] file:cursor-pointer" %>
+                <p class="mt-1 text-xs text-slate-500">PNG, JPG, GIF (최대 2MB)</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Workspace Name -->
+          <div>
+            <%= form.label :name, "워크스페이스 이름", class: "block text-sm font-medium text-slate-700 mb-1" %>
+            <%= form.text_field :name, 
+                class: "block w-full px-3 py-2 border border-slate-200 rounded-md text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75]",
+                placeholder: "워크스페이스 이름을 입력하세요" %>
+            <p class="mt-1 text-xs text-slate-500">이 이름은 모든 팀원에게 표시됩니다</p>
+          </div>
+        </div>
+        
+        <!-- Save Button -->
+        <div class="flex justify-end pt-4">
+          <%= form.submit "워크스페이스 설정 저장", 
+              class: "inline-flex items-center px-4 py-2 bg-[#FF6D75] text-white rounded-md hover:bg-[#E85560] focus:outline-none focus:ring-2 focus:ring-[#FF6D75] font-medium text-sm" %>
+        </div>
+      <% end %>
+      
+      <!-- Workspace Management Link -->
+      <div class="mt-6 pt-6 border-t border-slate-100">
+        <div class="flex items-center justify-between">
+          <div>
+            <h4 class="text-sm font-medium text-slate-900">워크스페이스 멤버 관리</h4>
+            <p class="text-sm text-slate-500 mt-1">멤버 추가, 제거 및 권한 관리</p>
+          </div>
+          <%= link_to workspace_members_path, class: "inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#FF6D75]" do %>
+            <%= icon "users", class: "w-4 h-4 mr-2" %>
+            멤버 관리
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Form -->
+  <div class="bg-white rounded-xl border border-slate-100">
+    <div class="px-6 py-4 border-b border-slate-100">
+      <h3 class="text-base font-semibold text-slate-900">계정 설정</h3>
+    </div>
+    
+    <div class="p-6">
+      <%= form_with model: @user, url: settings_path, method: :patch, local: true, class: "space-y-6" do |form| %>
+        <% if @user.errors.any? %>
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <%= icon "alert-circle", library: "tabler", class: "w-5 h-5 text-red-400" %>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">
+                  <%= pluralize(@user.errors.count, "error") %> 오류가 발생했습니다:
+                </h3>
+                <div class="mt-2 text-sm text-red-700">
+                  <ul class="list-disc list-inside">
+                    <% @user.errors.full_messages.each do |message| %>
+                      <li><%= message %></li>
+                    <% end %>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <!-- Personal Information -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h4 class="text-sm font-semibold text-slate-900 mb-4">개인 정보</h4>
+            <div class="space-y-4">
+              <div>
+                <%= form.label :first_name, "이름", class: "block text-sm font-medium text-slate-700 mb-1" %>
+                <%= form.text_field :first_name, class: "block w-full px-3 py-2 border border-slate-200 rounded-md text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75]" %>
+              </div>
+              
+              <div>
+                <%= form.label :last_name, "성", class: "block text-sm font-medium text-slate-700 mb-1" %>
+                <%= form.text_field :last_name, class: "block w-full px-3 py-2 border border-slate-200 rounded-md text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75]" %>
+              </div>
+              
+              <div>
+                <%= form.label :email, "이메일", class: "block text-sm font-medium text-slate-700 mb-1" %>
+                <%= form.email_field :email, class: "block w-full px-3 py-2 border border-slate-200 rounded-md text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75]" %>
+              </div>
+              
+              <div>
+                <%= form.label :phone, "전화번호", class: "block text-sm font-medium text-slate-700 mb-1" %>
+                <%= form.text_field :phone, class: "block w-full px-3 py-2 border border-slate-200 rounded-md text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75]", placeholder: "010-0000-0000", type: "tel" %>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-sm font-semibold text-slate-900 mb-4">환경 설정</h4>
+            <div class="space-y-4">
+              <div>
+                <%= form.label :timezone, "시간대", class: "block text-sm font-medium text-slate-700 mb-1" %>
+                <%= form.select :timezone, 
+                    options_for_select([
+                      ['서울 (Asia/Seoul)', 'Asia/Seoul'],
+                      ['도쿄 (Asia/Tokyo)', 'Asia/Tokyo'],
+                      ['상하이 (Asia/Shanghai)', 'Asia/Shanghai'],
+                      ['뉴욕 (America/New_York)', 'America/New_York'],
+                      ['로스앤젤레스 (America/Los_Angeles)', 'America/Los_Angeles'],
+                      ['런던 (Europe/London)', 'Europe/London']
+                    ], @user.timezone),
+                    {},
+                    { class: "block w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75]" } %>
+              </div>
+              
+              <div>
+                <%= form.label :language, "언어", class: "block text-sm font-medium text-slate-700 mb-1" %>
+                <%= form.select :language, 
+                    options_for_select([
+                      ['한국어', 'ko'],
+                      ['English', 'en'],
+                      ['日本語', 'ja'],
+                      ['中文', 'zh']
+                    ], @user.language),
+                    {},
+                    { class: "block w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75]" } %>
+              </div>
+              
+              <div>
+                <%= form.label :theme, "테마", class: "block text-sm font-medium text-slate-700 mb-1" %>
+                <%= form.select :theme, 
+                    options_for_select([
+                      ['밝은 테마', 'light'],
+                      ['어두운 테마', 'dark'],
+                      ['시스템 설정', 'system']
+                    ], @user.theme),
+                    {},
+                    { class: "block w-full px-3 py-2 border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6D75] focus:border-[#FF6D75]" } %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notifications -->
+        <div>
+          <h4 class="text-sm font-semibold text-slate-900 mb-4">알림 설정</h4>
+          <div class="space-y-4">
+            <div class="flex items-center">
+              <%= form.check_box :email_notifications, class: "h-4 w-4 text-[#FF6D75] focus:ring-[#FF6D75] border-slate-300 rounded" %>
+              <%= form.label :email_notifications, "이메일 알림", class: "ml-2 block text-sm text-slate-700" %>
+            </div>
+            
+            <div class="flex items-center">
+              <%= form.check_box :push_notifications, class: "h-4 w-4 text-[#FF6D75] focus:ring-[#FF6D75] border-slate-300 rounded" %>
+              <%= form.label :push_notifications, "푸시 알림", class: "ml-2 block text-sm text-slate-700" %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="flex justify-end pt-6 border-t border-slate-200">
+          <%= form.submit "설정 저장", class: "inline-flex items-center px-4 py-2 bg-[#FF6D75] text-white rounded-md hover:bg-[#E85560] focus:outline-none focus:ring-2 focus:ring-[#FF6D75] font-medium text-sm" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Account Actions -->
+  <div class="bg-white rounded-xl border border-slate-100">
+    <div class="px-6 py-4 border-b border-slate-100">
+      <h3 class="text-base font-semibold text-slate-900">계정 관리</h3>
+    </div>
+    
+    <div class="p-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <%= link_to edit_user_registration_path, class: "group flex items-center gap-3 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all" do %>
+          <div class="p-2 bg-slate-100 rounded-lg group-hover:bg-slate-200 transition-colors">
+            <%= icon "lock", library: "tabler", class: "w-5 h-5 text-slate-700" %>
+          </div>
+          <div class="flex-1">
+            <h4 class="text-sm font-medium text-slate-900">비밀번호 변경</h4>
+            <p class="text-sm text-slate-500">계정 보안을 위해 비밀번호를 변경하세요</p>
+          </div>
+        <% end %>
+        
+        <%= button_to destroy_user_session_path, method: :delete, data: { turbo: false }, class: "group flex items-center gap-3 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer w-full text-left" do %>
+          <div class="p-2 bg-slate-100 rounded-lg group-hover:bg-slate-200 transition-colors">
+            <%= icon "logout", library: "tabler", class: "w-5 h-5 text-slate-700" %>
+          </div>
+          <div class="flex-1">
+            <h4 class="text-sm font-medium text-slate-900">로그아웃</h4>
+            <p class="text-sm text-slate-500">현재 계정에서 로그아웃합니다</p>
+          </div>
+        <% end %>
+      </div>
+      
+      <hr class="my-6 border-slate-200">
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="group flex items-center gap-3 p-4 border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer">
+          <div class="p-2 bg-slate-100 rounded-lg group-hover:bg-slate-200 transition-colors">
+            <%= icon "file-export", library: "tabler", class: "w-5 h-5 text-slate-700" %>
+          </div>
+          <div class="flex-1">
+            <h4 class="text-sm font-medium text-slate-900">데이터 내보내기</h4>
+            <p class="text-sm text-slate-500">내 데이터를 JSON 형식으로 내보내기</p>
+          </div>
+        </div>
+        
+        <div class="group flex items-center gap-3 p-4 border border-red-200 rounded-lg hover:bg-red-50 hover:border-red-300 transition-all cursor-pointer"
+             onclick="showDeleteWorkspaceModal()">
+          <div class="p-2 bg-red-100 rounded-lg group-hover:bg-red-200 transition-colors">
+            <%= icon "trash", library: "tabler", class: "w-5 h-5 text-red-600" %>
+          </div>
+          <div class="flex-1">
+            <h4 class="text-sm font-medium text-red-900">워크스페이스 삭제</h4>
+            <p class="text-sm text-red-600">워크스페이스와 모든 데이터를 영구적으로 삭제</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Workspace Modal -->
+<div id="deleteWorkspaceModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+  <!-- Background overlay -->
+  <div class="fixed inset-0 bg-gray-500 opacity-75" onclick="hideDeleteWorkspaceModal()"></div>
+  
+  <!-- Modal container -->
+  <div class="relative flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center z-50">
+    <!-- Modal panel -->
+    <div class="relative z-50 inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+      <div class="sm:flex sm:items-start">
+        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+          <%= icon "alert-triangle", library: "tabler", class: "h-6 w-6 text-red-600" %>
+        </div>
+        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+          <h3 class="text-lg leading-6 font-medium text-gray-900">
+            워크스페이스 삭제
+          </h3>
+          <div class="mt-2">
+            <p class="text-sm text-gray-500">
+              정말로 <strong class="text-gray-700"><%= @workspace.name %></strong> 워크스페이스를 삭제하시겠습니까? 
+              이 작업은 되돌릴 수 없으며, 모든 데이터가 영구적으로 삭제됩니다.
+            </p>
+            <div class="mt-4 bg-red-50 p-4 rounded-md">
+              <p class="text-sm text-red-800 font-medium">다음 항목들이 모두 삭제됩니다:</p>
+              <ul class="mt-2 text-sm text-red-700 list-disc list-inside">
+                <li>모든 노트와 문서</li>
+                <li>모든 채팅 메시지</li>
+                <li>모든 팀원 정보</li>
+                <li>모든 설정과 카테고리</li>
+              </ul>
+            </div>
+            <div class="mt-4">
+              <p class="text-sm text-gray-700 font-medium">확인을 위해 워크스페이스 이름을 입력하세요:</p>
+              <input type="text" 
+                     id="confirmWorkspaceName" 
+                     class="mt-2 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                     placeholder="<%= @workspace.name %>">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+        <%= form_with url: workspace_path(@workspace), method: :delete, local: true, data: { turbo: false }, id: "deleteWorkspaceForm", class: "inline-block" do |form| %>
+          <%= form.submit "워크스페이스 삭제", 
+              id: "confirmDeleteButton",
+              disabled: true,
+              class: "w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-300 text-base font-medium text-gray-500 cursor-not-allowed sm:ml-3 sm:w-auto sm:text-sm" %>
+        <% end %>
+        <button type="button" 
+                onclick="hideDeleteWorkspaceModal()"
+                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6D75] sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+          취소
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showDeleteWorkspaceModal() {
+  const modal = document.getElementById('deleteWorkspaceModal');
+  const confirmInput = document.getElementById('confirmWorkspaceName');
+  const deleteButton = document.getElementById('confirmDeleteButton');
+  
+  modal.classList.remove('hidden');
+  confirmInput.value = '';
+  
+  // Reset button state
+  deleteButton.disabled = true;
+  deleteButton.classList.remove('bg-red-600', 'text-white', 'hover:bg-red-700', 'cursor-pointer');
+  deleteButton.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+  
+  // Focus on input field
+  setTimeout(() => confirmInput.focus(), 100);
+  
+  // Setup event listener for modal input
+  const workspaceName = <%= @workspace.name.to_json.html_safe %>;
+  console.log('Expected workspace name:', workspaceName);
+  
+  // Remove any existing event listeners
+  confirmInput.oninput = null;
+  
+  // Add new event listener
+  confirmInput.addEventListener('input', function() {
+    const inputValue = this.value.trim();
+    console.log('Input value:', inputValue);
+    console.log('Expected:', workspaceName);
+    console.log('Exact match:', inputValue === workspaceName);
+    console.log('Case-insensitive match:', inputValue.toLowerCase() === workspaceName.toLowerCase());
+    
+    // Exact match required for deletion
+    if (inputValue === workspaceName) {
+      deleteButton.disabled = false;
+      deleteButton.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+      deleteButton.classList.add('bg-red-600', 'text-white', 'hover:bg-red-700', 'cursor-pointer');
+      console.log('Button enabled');
+    } else {
+      deleteButton.disabled = true;
+      deleteButton.classList.remove('bg-red-600', 'text-white', 'hover:bg-red-700', 'cursor-pointer');
+      deleteButton.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+      console.log('Button disabled');
+    }
+  });
+  
+  // Add ESC key listener
+  const escKeyListener = function(e) {
+    if (e.key === 'Escape') {
+      hideDeleteWorkspaceModal();
+      document.removeEventListener('keydown', escKeyListener);
+    }
+  };
+  document.addEventListener('keydown', escKeyListener);
+}
+
+function hideDeleteWorkspaceModal() {
+  document.getElementById('deleteWorkspaceModal').classList.add('hidden');
+}
+
+</script>

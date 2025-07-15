@@ -1,0 +1,10 @@
+<% if channel.errors.any? %>
+  <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+    <p class="text-sm font-medium text-red-800 mb-1">채널 생성에 실패했습니다:</p>
+    <ul class="text-sm text-red-700 list-disc list-inside">
+      <% channel.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>

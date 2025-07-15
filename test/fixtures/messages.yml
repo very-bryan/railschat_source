@@ -1,0 +1,15 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  body: MyText
+  channel: one
+  user: one
+  thread_root: one
+  note: one
+
+two:
+  body: MyText
+  channel: two
+  user: two
+  thread_root: two
+  note: two

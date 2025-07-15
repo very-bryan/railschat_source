@@ -1,0 +1,544 @@
+/* Dark mode styles - ONLY applied when html has 'dark' class */
+
+/* Root dark mode settings */
+html.dark {
+  color-scheme: dark;
+}
+
+/* Dark mode body */
+html.dark body {
+  background-color: #0a0a0b !important;
+  color: #CECECE !important;
+}
+
+/* Dark mode backgrounds */
+html.dark .bg-white {
+  background-color: #18181b !important;
+}
+
+html.dark .bg-slate-50 {
+  background-color: #0a0a0b !important;
+}
+
+html.dark .bg-slate-100 {
+  background-color: #27272a !important;
+}
+
+html.dark .bg-gray-50 {
+  background-color: #18181b !important;
+}
+
+/* Dark mode text colors */
+html.dark .text-slate-900 {
+  color: #CECECE !important;
+}
+
+html.dark .text-slate-700 {
+  color: #B8B8B8 !important;
+}
+
+html.dark .text-slate-600 {
+  color: #9A9A9A !important;
+}
+
+html.dark .text-slate-500 {
+  color: #717171 !important;
+}
+
+html.dark .text-slate-400 {
+  color: #525252 !important;
+}
+
+/* Dark mode borders */
+html.dark .border-slate-200 {
+  border-color: #27272a !important;
+}
+
+html.dark .border-slate-100 {
+  border-color: #3f3f46 !important;
+}
+
+html.dark .divide-slate-200 > * + * {
+  border-color: #27272a !important;
+}
+
+/* Dark mode buttons - Primary color #8B5CF6 */
+html.dark .bg-\[\#FF6D75\] {
+  background-color: #8B5CF6 !important;
+}
+
+html.dark .hover\:bg-\[\#E85560\]:hover {
+  background-color: #7C3AED !important;
+}
+
+html.dark .focus\:ring-\[\#FF6D75\]:focus {
+  --tw-ring-color: #8B5CF6 !important;
+}
+
+html.dark .focus\:border-\[\#FF6D75\]:focus {
+  border-color: #8B5CF6 !important;
+}
+
+html.dark .text-\[\#FF6D75\] {
+  color: #8B5CF6 !important;
+}
+
+html.dark .hover\:text-\[\#E85560\]:hover {
+  color: #7C3AED !important;
+}
+
+/* Dark mode hover states */
+html.dark .hover\:bg-slate-100:hover {
+  background-color: #27272a !important;
+}
+
+html.dark .hover\:bg-slate-50:hover {
+  background-color: #18181b !important;
+}
+
+html.dark .hover\:text-slate-900:hover {
+  color: #CECECE !important;
+}
+
+html.dark .hover\:text-slate-700:hover {
+  color: #B8B8B8 !important;
+}
+
+/* Dark mode inputs and forms */
+html.dark input[type="text"],
+html.dark input[type="email"],
+html.dark input[type="password"],
+html.dark textarea,
+html.dark select {
+  background-color: #18181b !important;
+  border-color: #27272a !important;
+  color: #CECECE !important;
+}
+
+html.dark input[type="text"]:focus,
+html.dark input[type="email"]:focus,
+html.dark input[type="password"]:focus,
+html.dark textarea:focus,
+html.dark select:focus {
+  border-color: #8B5CF6 !important;
+  --tw-ring-color: #8B5CF6 !important;
+}
+
+/* Dark mode links */
+html.dark a.text-\[\#FF6D75\] {
+  color: #8B5CF6 !important;
+}
+
+html.dark a.hover\:text-\[\#E85560\]:hover {
+  color: #7C3AED !important;
+}
+
+/* Dark mode notification styles */
+html.dark .bg-emerald-50 {
+  background-color: #10b981 !important;
+  background-opacity: 0.1 !important;
+  color: #10b981 !important;
+}
+
+html.dark .bg-red-50 {
+  background-color: #ef4444 !important;
+  background-opacity: 0.1 !important;
+  color: #ef4444 !important;
+}
+
+html.dark .text-emerald-800 {
+  color: #6ee7b7 !important;
+}
+
+html.dark .text-red-800 {
+  color: #fca5a5 !important;
+}
+
+html.dark .border-emerald-200 {
+  border-color: #064e3b !important;
+}
+
+html.dark .border-red-200 {
+  border-color: #7f1d1d !important;
+}
+
+/* Dark mode specific gray backgrounds */
+html.dark .bg-gray-800 {
+  background-color: #18181b !important;
+}
+
+html.dark .bg-gray-900 {
+  background-color: #0a0a0b !important;
+}
+
+html.dark .bg-gray-700 {
+  background-color: #27272a !important;
+}
+
+/* Dark mode specific gray text */
+html.dark .text-gray-100 {
+  color: #CECECE !important;
+}
+
+html.dark .text-gray-200 {
+  color: #B8B8B8 !important;
+}
+
+html.dark .text-gray-300 {
+  color: #9A9A9A !important;
+}
+
+html.dark .text-gray-400 {
+  color: #717171 !important;
+}
+
+html.dark .text-gray-500 {
+  color: #525252 !important;
+}
+
+/* Dark mode specific gray hovers */
+html.dark .hover\:bg-gray-700:hover {
+  background-color: #27272a !important;
+}
+
+html.dark .hover\:bg-gray-600:hover {
+  background-color: #3f3f46 !important;
+}
+
+html.dark .hover\:text-gray-200:hover {
+  color: #B8B8B8 !important;
+}
+
+/* Dark mode specific gray borders */
+html.dark .border-gray-700 {
+  border-color: #27272a !important;
+}
+
+html.dark .border-gray-600 {
+  border-color: #3f3f46 !important;
+}
+
+html.dark .border-gray-800 {
+  border-color: #18181b !important;
+}
+
+/* Dark mode gradients */
+html.dark .from-\[\#FF6D75\] {
+  --tw-gradient-from: #8B5CF6 !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+html.dark .to-\[\#E85560\] {
+  --tw-gradient-to: #7C3AED !important;
+}
+
+/* Dark mode shadows */
+html.dark .shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.5) !important;
+}
+
+html.dark .shadow {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.6), 0 1px 2px -1px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.dark .shadow-md {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -2px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Dark mode ring colors */
+html.dark .ring-slate-200 {
+  --tw-ring-color: #27272a !important;
+}
+
+html.dark .ring-\[\#FF6D75\] {
+  --tw-ring-color: #8B5CF6 !important;
+}
+
+/* Dark mode YouTube preview */
+html.dark .aspect-video {
+  background-color: #0a0a0b !important;
+}
+
+html.dark .text-red-600 {
+  color: #ef4444 !important;
+}
+
+/* YouTube Preview specific dark mode styles */
+html.dark .youtube-preview {
+  background-color: #18181b !important;
+  border-color: #27272a !important;
+}
+
+html.dark .youtube-preview:hover {
+  border-color: #3f3f46 !important;
+}
+
+html.dark .youtube-preview .bg-slate-100 {
+  background-color: #0a0a0b !important;
+}
+
+html.dark .youtube-preview a {
+  color: #9A9A9A !important;
+}
+
+html.dark .youtube-preview a:hover {
+  color: #CECECE !important;
+}
+
+/* Web Link Preview dark mode styles */
+html.dark .link-preview {
+  background-color: #18181b !important;
+  border-color: #27272a !important;
+}
+
+html.dark .link-preview:hover {
+  border-color: #3f3f46 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -2px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.dark .link-preview .bg-slate-100 {
+  background-color: #0a0a0b !important;
+}
+
+html.dark .link-preview .bg-white {
+  background-color: #18181b !important;
+}
+
+html.dark .link-preview h3 {
+  color: #CECECE !important;
+}
+
+html.dark .link-preview h3.group-hover\:text-\[\#FF6D75\]:hover {
+  color: #a78bfa !important;
+}
+
+html.dark .link-preview .text-slate-600 {
+  color: #9A9A9A !important;
+}
+
+html.dark .link-preview .text-slate-400 {
+  color: #717171 !important;
+}
+
+/* Dark mode table styles */
+html.dark .divide-y > * + * {
+  border-top-color: #27272a !important;
+}
+
+html.dark thead {
+  background-color: #18181b !important;
+}
+
+html.dark tbody tr:hover {
+  background-color: #27272a !important;
+}
+
+/* Ensure dark mode icons inherit color and use stroke for line icons */
+html.dark svg {
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2 !important;
+}
+
+/* For icons that need to be filled (like solid icons) */
+html.dark svg.fill-icon {
+  fill: currentColor !important;
+  stroke: none !important;
+}
+
+/* Tabler icons specific adjustments */
+html.dark .tabler-icon {
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2 !important;
+}
+
+/* Fix for icon containers to ensure proper color inheritance */
+html.dark [class*="text-"] svg {
+  stroke: currentColor !important;
+  fill: none !important;
+}
+
+/* Fix for user profile gradient in dark mode only */
+html.dark .from-slate-600 {
+  --tw-gradient-from: #8B5CF6 !important;
+}
+
+html.dark .to-slate-700 {
+  --tw-gradient-to: #7C3AED !important;
+}
+
+/* User avatar backgrounds in dark mode */
+html.dark .bg-slate-200 {
+  background-color: #3f3f46 !important;
+}
+
+html.dark .bg-gray-300 {
+  background-color: #52525b !important;
+}
+
+/* User avatar text colors for better contrast */
+html.dark .text-slate-600 {
+  color: #CECECE !important;
+}
+
+html.dark .text-gray-600 {
+  color: #CECECE !important;
+}
+
+/* Ensure white text stays white on colored backgrounds */
+html.dark .text-white {
+  color: #CECECE !important;
+}
+
+/* Additional card and surface styles */
+html.dark .bg-white\/5 {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark .bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Accent colors for status indicators */
+html.dark .text-green-400 {
+  color: #4ade80 !important;
+}
+
+html.dark .text-orange-400 {
+  color: #fb923c !important;
+}
+
+html.dark .text-blue-400 {
+  color: #60a5fa !important;
+}
+
+html.dark .text-purple-400 {
+  color: #a78bfa !important;
+}
+
+/* Card backgrounds with subtle borders */
+html.dark .bg-zinc-900 {
+  background-color: #18181b !important;
+  border-color: #27272a !important;
+}
+
+html.dark .bg-zinc-800 {
+  background-color: #27272a !important;
+  border-color: #3f3f46 !important;
+}
+
+/* Form elements and dropdowns */
+html.dark .bg-black {
+  background-color: #0a0a0b !important;
+}
+
+html.dark .bg-gray-100 {
+  background-color: #18181b !important;
+}
+
+html.dark .bg-gray-200 {
+  background-color: #27272a !important;
+}
+
+/* Dropdown menus and select elements */
+html.dark select,
+html.dark .select,
+html.dark [role="listbox"],
+html.dark [role="combobox"] {
+  background-color: #18181b !important;
+  border-color: #27272a !important;
+  color: #CECECE !important;
+}
+
+html.dark select option,
+html.dark .dropdown-item,
+html.dark [role="option"] {
+  background-color: #18181b !important;
+  color: #CECECE !important;
+}
+
+html.dark select option:hover,
+html.dark .dropdown-item:hover,
+html.dark [role="option"]:hover {
+  background-color: #27272a !important;
+}
+
+/* Input fields with better visibility */
+html.dark input,
+html.dark textarea {
+  background-color: #18181b !important;
+  border-color: #27272a !important;
+  color: #CECECE !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #52525b !important;
+}
+
+/* Focus states for better visibility */
+html.dark input:focus,
+html.dark textarea:focus,
+html.dark select:focus {
+  background-color: #18181b !important;
+  border-color: #8B5CF6 !important;
+  outline: 2px solid transparent !important;
+  outline-offset: 2px !important;
+  --tw-ring-color: #8B5CF6 !important;
+  --tw-ring-opacity: 0.5 !important;
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color) !important;
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color) !important;
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000) !important;
+}
+
+/* Modal and dialog backgrounds */
+html.dark .modal,
+html.dark .dialog,
+html.dark [role="dialog"] {
+  background-color: #0a0a0b !important;
+}
+
+/* Card and panel styles */
+html.dark .card,
+html.dark .panel {
+  background-color: #18181b !important;
+  border-color: #27272a !important;
+}
+
+/* List items */
+html.dark .list-item,
+html.dark li {
+  background-color: transparent !important;
+}
+
+html.dark .list-item:hover,
+html.dark li:hover {
+  background-color: #27272a !important;
+}
+
+/* Badge and tag styles */
+html.dark .badge,
+html.dark .tag {
+  background-color: #27272a !important;
+  color: #CECECE !important;
+}
+
+/* Specific fixes for note creation form */
+html.dark .note-form,
+html.dark form {
+  background-color: transparent !important;
+}
+
+html.dark .form-group {
+  background-color: transparent !important;
+}
+
+/* Fix for dropdown chevron icons */
+html.dark select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23CECECE' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
+  background-position: right 0.5rem center !important;
+  background-size: 1.5em 1.5em !important;
+  background-repeat: no-repeat !important;
+  padding-right: 2.5rem !important;
+}
